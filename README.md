@@ -125,6 +125,8 @@ PLAN (1–2) → BUILD (3–6) → TEST (7–9) → LAUNCH (10)
 ```
 main                    → stable, integrated codebase
 feature/be-core         → core backend
+feature/be-medication-  → Medication Management Service
+reminder  
 feature/be-ai-rag       → AI service, RAG, ChromaDB, chatbot
 feature/fe-core         → frontend, audio-first UI
 feature/doctor-module   → doctor & healthcare professional module
@@ -139,6 +141,7 @@ feature/community       → community network & i18n
 | Area | Owner |
 |---|---|
 | AI Assistant & RAG | Sophie ([@SOphyJR](https://github.com/SOphyJR)) |
+|Medication Management Service| Simret ([@Simret_Y](https://github.com/Simret-Y)) |
 | Core Backend | — |
 | Frontend | — |
 | Doctor Module | — |
