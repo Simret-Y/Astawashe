@@ -217,7 +217,7 @@ feature/community     → community network & multi-language support
 ```bash
 # Clone the repo
 git clone <repo-url>
-cd Astawashe_I
+cd Astawashe
 
 # Install backend dependencies
 cd server-core && npm install
