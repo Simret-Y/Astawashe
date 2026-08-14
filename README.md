@@ -133,15 +133,6 @@ feature/community       → community network & i18n
 
 > PR into `main` — no direct pushes, please.
 
-## 🚀 Getting Started
-
-```bash
-git clone <repo-url> && cd Astawashe_I
-
-cd server-core && npm install       # core backend
-cd ../server-ai && pip install -r requirements.txt   # AI service
-cd ../client && npm install         # frontend
-```
 
 ## 👤 Team
 
