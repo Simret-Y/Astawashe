@@ -9,7 +9,7 @@
 *Built audio-first — so no patient is left behind by what they can or can't see.*
 
 ![Status](https://img.shields.io/badge/status-in--development-orange)
-![License](https://img.shields.io/badge/license-MIT-blue)
+![License](https://img.shields.io/badge/license-TBD-lightgrey)
 ![INSA](https://img.shields.io/badge/INSA%20Summer%20Camp-PI%202026-0aa)
 
 </div>
