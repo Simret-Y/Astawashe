@@ -142,7 +142,7 @@ feature/community       → community network & i18n
 |---|---|
 | AI Assistant & RAG | Sophie ([@SOphyJR](https://github.com/SOphyJR)) |
 |Medication Management Service| Simret ([@Simret_Y](https://github.com/Simret-Y)) |
-| Core Backend | — |
+| Core Backend | Tsion ([@tsion2107] (https://github.com/Tsion2107)) |
 | Frontend | — |
 | Doctor Module | — |
 | Community & i18n | — |
