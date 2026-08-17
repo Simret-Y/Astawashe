@@ -1,4 +1,5 @@
 const bcrypt = require("bcryptjs");
+const jwt = require("jsonwebtoken");
 const pool = require("../config/db");
 
 const register = async (req, res) => {
@@ -115,6 +116,91 @@ const register = async (req, res) => {
   }
 };
 
+const login = async (req, res) => {
+  try {
+    const { email, password } = req.body;
+
+    // Validate input
+    if (!email || !password) {
+      return res.status(400).json({
+        message: "Email and password are required"
+      });
+    }
+
+    // Find user
+    const result = await pool.query(
+      `SELECT
+        user_id,
+        full_name,
+        email,
+        password_hash,
+        role_id,
+        is_active
+       FROM users
+       WHERE email = $1`,
+      [email]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(401).json({
+        message: "Invalid email or password"
+      });
+    }
+
+    const user = result.rows[0];
+
+    // Check whether account is active
+    if (!user.is_active) {
+      return res.status(403).json({
+        message: "Account is inactive"
+      });
+    }
+
+    // Compare password with stored hash
+    const passwordMatches = await bcrypt.compare(
+      password,
+      user.password_hash
+    );
+
+    if (!passwordMatches) {
+      return res.status(401).json({
+        message: "Invalid email or password"
+      });
+    }
+
+    // Create JWT
+    const token = jwt.sign(
+      {
+        user_id: user.user_id,
+        role_id: user.role_id
+      },
+      process.env.JWT_SECRET,
+      {
+        expiresIn: process.env.JWT_EXPIRES_IN || "1d"
+      }
+    );
+
+    return res.status(200).json({
+      message: "Login successful",
+      token,
+      user: {
+        user_id: user.user_id,
+        full_name: user.full_name,
+        email: user.email,
+        role_id: user.role_id
+      }
+    });
+
+  } catch (error) {
+    console.error("Login error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
 module.exports = {
-  register
+  register,
+  login
 };
