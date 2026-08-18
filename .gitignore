@@ -1,0 +1,20 @@
+# Server2 Python cache
+Server2/**/__pycache__/
+Server2/**/*.pyc
+
+# Server2 environment/secrets
+Server2/.env
+Server2/.env.*
+!Server2/.env.example
+
+# ChromaDB generated files
+Server2/chroma_db/
+Server2/AI_Assistant/chroma_db/
+
+# Python virtual environments
+Server2/.venv/
+Server2/venv/
+Server2/env/
+
+# Logs
+Server2/**/*.log
