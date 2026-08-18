@@ -9,6 +9,8 @@ const healthcareProfessionalRoutes =
   require("./src/routes/healthcareProfessionalRoutes");
 const guardianRoutes =
   require("./src/routes/guardianRoutes");
+const patientGuardianRoutes =
+  require("./src/routes/patientGuardianRoutes");
 
 const app = express();
 
@@ -28,6 +30,11 @@ app.use(
 );
 
 app.use("/api/guardians", guardianRoutes);
+
+app.use(
+  "/api/patient-guardians",
+  patientGuardianRoutes
+);
 
 app.get("/", (req, res) => {
   res.json({
