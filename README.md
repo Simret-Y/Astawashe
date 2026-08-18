@@ -144,7 +144,7 @@ feature/community       → community network & i18n
 |Medication Management Service| Simret ([@Simret_Y](https://github.com/Simret-Y)) |
 | Core Backend | Tsion ([@tsion2107](https://github.com/Tsion2107)) |
 | Frontend | — |
-| Doctor Module | — |
+| Adminstartion Page | — |
 | Community & i18n | — |
 
 ---
