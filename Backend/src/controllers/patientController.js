@@ -13,6 +13,22 @@ const createPatient = async (req, res) => {
 
     const userId = req.user.user_id;
 
+    if (height !== undefined && height !== null) {
+      if (Number(height) <= 0) {
+        return res.status(400).json({
+          message: "Height must be greater than 0"
+        });
+      }
+    }
+
+    if (weight !== undefined && weight !== null) {
+      if (Number(weight) <= 0) {
+        return res.status(400).json({
+          message: "Weight must be greater than 0"
+        });
+      }
+    }
+
     if (!medical_record_number) {
       return res.status(400).json({
         message: "Medical record number is required"

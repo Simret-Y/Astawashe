@@ -1,6 +1,7 @@
 const express = require("express");
 const {
-  createHealthcareProfessional
+  createHealthcareProfessional,
+  getMyHealthcareProfessionalProfile
 } = require("../controllers/healthcareProfessionalController");
 
 const { authenticate } = require("../middleware/authMiddleware");
@@ -11,6 +12,12 @@ router.post(
   "/",
   authenticate,
   createHealthcareProfessional
+);
+
+router.get(
+  "/me",
+  authenticate,
+  getMyHealthcareProfessionalProfile
 );
 
 module.exports = router;

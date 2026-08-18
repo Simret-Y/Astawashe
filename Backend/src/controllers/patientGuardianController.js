@@ -5,10 +5,12 @@ const createPatientGuardianRelationship = async (req, res) => {
     const { patient_id } = req.body;
     const userId = req.user.user_id;
 
-    if (!patient_id) {
-      return res.status(400).json({
-        message: "Patient ID is required"
-      });
+    const patientId = Number(patient_id);
+
+    if (!Number.isInteger(patientId) || patientId <= 0) {
+        return res.status(400).json({
+            message: "A valid patient ID is required"
+        });
     }
 
     // Only guardians can create guardian relationships

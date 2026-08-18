@@ -22,6 +22,28 @@ const register = async (req, res) => {
       });
     }
 
+    if (password.length < 8) {
+      return res.status(400).json({
+        message: "Password must be at least 8 characters"
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        message: "Invalid email format"
+     });
+    }
+
+    const allowedRegistrationRoles = [1, 2, 3, 4];
+
+    if (!allowedRegistrationRoles.includes(Number(role_id))) {
+      return res.status(403).json({
+       message: "This role cannot be registered through this endpoint"
+      });
+    }
+
     // Check whether the role exists
     const roleResult = await pool.query(
       "SELECT role_id, role_name FROM roles WHERE role_id = $1",

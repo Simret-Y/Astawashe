@@ -57,6 +57,49 @@ const createGuardian = async (req, res) => {
   }
 };
 
+const getMyGuardianProfile = async (req, res) => {
+  try {
+    if (req.user.role_id !== 4) {
+      return res.status(403).json({
+        message: "Only guardians can access this resource"
+      });
+    }
+
+    const result = await pool.query(
+      `SELECT
+        g.guardian_id,
+        g.user_id,
+        u.full_name,
+        u.email,
+        u.phone_number,
+        g.relationship,
+        g.created_at
+       FROM guardians g
+       JOIN users u ON g.user_id = u.user_id
+       WHERE g.user_id = $1`,
+      [req.user.user_id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({
+        message: "Guardian profile not found"
+      });
+    }
+
+    return res.status(200).json({
+      guardian: result.rows[0]
+    });
+
+  } catch (error) {
+    console.error("Get guardian profile error:", error);
+
+    return res.status(500).json({
+      message: "Internal server error"
+    });
+  }
+};
+
 module.exports = {
-  createGuardian
+  createGuardian,
+  getMyGuardianProfile
 };

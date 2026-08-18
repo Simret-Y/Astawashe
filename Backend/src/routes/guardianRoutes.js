@@ -1,6 +1,7 @@
 const express = require("express");
 const {
-  createGuardian
+  createGuardian,
+  getMyGuardianProfile
 } = require("../controllers/guardianController");
 
 const { authenticate } = require("../middleware/authMiddleware");
@@ -11,6 +12,12 @@ router.post(
   "/",
   authenticate,
   createGuardian
+);
+
+router.get(
+  "/me",
+  authenticate,
+  getMyGuardianProfile
 );
 
 module.exports = router;
