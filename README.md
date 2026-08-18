@@ -145,7 +145,7 @@ feature/community       → community network & i18n
 | Core Backend | Tsion ([@tsion2107](https://github.com/Tsion2107)) |
 | Frontend | Tsegazeab ([@tsegayeabkitaw844-glitch](https://github.com/tsegazeabkitaw844-glitch))|
 | Adminstartion Page | Kibir ([@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg))|
-| Community & i18n | — |
+| Guardian Portal| siimonzaadig-git ([@tsion2107](https://github.com/siimonzaadig-git))|
 
 ---
 
