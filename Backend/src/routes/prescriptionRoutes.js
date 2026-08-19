@@ -1,0 +1,10 @@
+const express = require("express");
+const controller = require("../controllers/prescriptionController");
+const { authenticate } = require("../middleware/authMiddleware");
+const router = express.Router();
+router.post("/", authenticate, controller.createPrescription);
+router.get("/", authenticate, controller.getPrescriptions);
+router.get("/:id", authenticate, controller.getPrescription);
+router.put("/:id", authenticate, controller.updatePrescription);
+router.delete("/:id", authenticate, controller.cancelPrescription);
+module.exports = router;

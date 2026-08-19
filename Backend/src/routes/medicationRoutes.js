@@ -1,0 +1,10 @@
+const express = require("express");
+const controller = require("../controllers/medicationController");
+const { authenticate } = require("../middleware/authMiddleware");
+const router = express.Router();
+router.post("/", authenticate, controller.createMedication);
+router.get("/", authenticate, controller.getMedications);
+router.get("/:id", authenticate, controller.getMedication);
+router.put("/:id", authenticate, controller.updateMedication);
+router.delete("/:id", authenticate, controller.deleteMedication);
+module.exports = router;
