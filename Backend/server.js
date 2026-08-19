@@ -1,0 +1,64 @@
+require("dotenv").config();
+
+const express = require("express");
+const pool = require("./src/config/db");
+const authRoutes = require("./src/routes/authRoutes");
+const userRoutes = require("./src/routes/userRoutes");
+const patientRoutes = require("./src/routes/patientRoutes");
+const healthcareProfessionalRoutes =
+  require("./src/routes/healthcareProfessionalRoutes");
+const guardianRoutes =
+  require("./src/routes/guardianRoutes");
+const patientGuardianRoutes =
+  require("./src/routes/patientGuardianRoutes");
+
+const app = express();
+
+const PORT = process.env.PORT || 5000;
+
+app.use(express.json());
+
+app.use("/api/auth", authRoutes);
+
+app.use("/api/users", userRoutes);
+
+app.use("/api/patients", patientRoutes);
+
+app.use(
+  "/api/healthcare-professionals",
+  healthcareProfessionalRoutes
+);
+
+app.use("/api/guardians", guardianRoutes);
+
+app.use(
+  "/api/patient-guardians",
+  patientGuardianRoutes
+);
+
+app.get("/", (req, res) => {
+  res.json({
+    message: "AstaWashe backend is running!"
+  });
+});
+
+app.get("/db-test", async (req, res) => {
+  try {
+    const result = await pool.query("SELECT NOW()");
+
+    res.json({
+      message: "Database connected successfully!",
+      time: result.rows[0].now
+    });
+  } catch (error) {
+    console.error(error);
+
+    res.status(500).json({
+      message: "Database connection failed"
+    });
+  }
+});
+
+app.listen(PORT, () => {
+  console.log(`Server running on http://localhost:${PORT}`);
+});
