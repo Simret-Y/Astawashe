@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>MediCare - Medicine Reminder</title>
+  
+
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+  <!-- Header -->
+  <header class="header">
+
+    <div class="logo">
+      <div class="pill">💊</div>
+
+      <div>
+        <h2>MediCare</h2>
+        <p>Medicine Reminder</p>
+      </div>
+    </div>
+
+    <div class="profile">
+      <div class="avatar">👤</div>
+      <span>Tsegazeab kitaw</span>
+      <span>⌄</span>
+    </div>
+
+  </header>
+
+
+  <div class="container">
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+
+      <button class="menu active" onclick="showPage('home', this)">
+        🏠 Home
+      </button>
+
+      <button class="menu" onclick="showPage('medicines', this)">
+        💊 My Medicines
+      </button>
+
+      <button class="menu" onclick="showPage('history', this)">
+        📅 History
+      </button>
+
+      <button class="menu" onclick="showPage('settings', this)">
+        ⚙️ Settings
+      </button>
+
+    </aside>
+
+
+    <!-- Main Content -->
+    <main class="main">
+
+      <!-- HOME -->
+      <section id="home" class="page">
+
+        <h1>Hello, TSEGA!</h1>
+
+        <p class="subtitle">
+          Here are your medicine reminders for today.
+        </p>
+
+
+        <!-- Health Banner -->
+        <div class="banner">
+
+          <div class="heart">♡</div>
+
+          <div>
+            <h3>Take your medicines on time</h3>
+
+            <p>
+              A healthier you, a brighter tomorrow.
+            </p>
+          </div>
+
+        </div>
+
+
+        <h2 class="title">Today's Reminders</h2>
+
+
+        <!-- Medicine 1 -->
+        <div class="medicine green">
+
+          <div class="medicine-icon">☀️</div>
+
+          <div class="medicine-info">
+
+            <h2>08:00 AM</h2>
+
+            <h3>Paracetamol 500mg</h3>
+
+            <p>1 tablet</p>
+
+          </div>
+
+          <button
+            class="take-button"
+            onclick="takeMedicine(this, 'Paracetamol 500mg')">
+
+            Take Medicine
+
+          </button>
+
+        </div>
+
+
+        <!-- Medicine 2 -->
+        <div class="medicine yellow">
+
+          <div class="medicine-icon">☀️</div>
+
+          <div class="medicine-info">
+
+            <h2>01:00 PM</h2>
+
+            <h3>Vitamin D3</h3>
+
+            <p>1 capsule</p>
+
+          </div>
+
+          <button
+            class="take-button"
+            onclick="takeMedicine(this, 'Vitamin D3')">
+
+            Take Medicine
+
+          </button>
+
+        </div>
+
+
+        <!-- Medicine 3 -->
+        <div class="medicine purple">
+
+          <div class="medicine-icon">🌙</div>
+
+          <div class="medicine-info">
+
+            <h2>08:00 PM</h2>
+
+            <h3>Amoxicillin 250mg</h3>
+
+            <p>1 capsule</p>
+
+          </div>
+
+          <button
+            class="take-button"
+            onclick="takeMedicine(this, 'Amoxicillin 250mg')">
+
+            Take Medicine
+
+          </button>
+
+        </div>
+
+      </section>
+
+
+      <!-- MY MEDICINES -->
+      <section id="medicines" class="page hidden">
+
+        <h1>My Medicines</h1>
+
+        <p class="subtitle">
+          Your current medicines.
+        </p>
+
+        <div class="box">
+
+          <h3>💊 Paracetamol 500mg</h3>
+          <p>1 tablet — 08:00 AM</p>
+
+          <hr>
+
+          <h3>💊 Vitamin D3</h3>
+          <p>1 capsule — 01:00 PM</p>
+
+          <hr>
+
+          <h3>💊 Amoxicillin 250mg</h3>
+          <p>1 capsule — 08:00 PM</p>
+
+        </div>
+
+      </section>
+
+
+      <!-- HISTORY -->
+      <section id="history" class="page hidden">
+
+        <h1>History</h1>
+
+        <p class="subtitle">
+          Your medicine history.
+        </p>
+
+        <div class="box">
+
+          <h3>✅ Paracetamol 500mg</h3>
+          <p>Taken today at 08:00 AM</p>
+
+          <hr>
+
+          <h3>⏰ Vitamin D3</h3>
+          <p>Pending — 01:00 PM</p>
+
+          <hr>
+
+          <h3>⏰ Amoxicillin 250mg</h3>
+          <p>Pending — 08:00 PM</p>
+
+        </div>
+
+      </section>
+      <!-- SETTINGS -->
+      <section id="settings" class="page hidden">
+
+        <h1>Settings</h1>
+
+        <p class="subtitle">
+          Manage your reminder settings.
+        </p>
+
+        <div class="box">
+
+          <label>
+            Medicine notifications
+            <input type="checkbox" checked>
+          </label>
+
+          <hr>
+
+          <label>
+            Daily reminders
+            <input type="checkbox" checked>
+          </label>
+
+        </div>
+
+      </section>
+
+    </main>
+
+  </div>
+  <footer><h2>&copy; All rights reserved 2026</h2></footer>
+
+
+  <!-- JavaScript -->
+  <script src="script.js"></script>
+
+</body>
+</html>
