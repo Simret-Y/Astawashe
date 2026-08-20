@@ -1,0 +1,392 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: Arial, sans-serif;
+  color: #071735;
+  background: white;
+}
+
+
+/* HEADER */
+
+.header {
+  height: 90px;
+  border-bottom: 1px solid #e5eaf0;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 0 45px;
+}
+
+
+/* LOGO */
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+.logo h2 {
+  font-size: 30px;
+}
+
+.logo p {
+  color: #68758a;
+}
+
+.pill {
+  font-size: 40px;
+}
+
+
+/* PROFILE */
+
+.profile {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+
+  font-weight: bold;
+}
+
+.avatar {
+  width: 50px;
+  height: 50px;
+
+  border-radius: 50%;
+
+  background: #edf3fb;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 25px;
+}
+
+
+/* LAYOUT */
+
+.container {
+  display: flex;
+  min-height: calc(100vh - 90px);
+}
+
+
+/* SIDEBAR */
+
+.sidebar {
+  width: 310px;
+
+  background: #f5f8fc;
+
+  padding: 20px;
+}
+
+
+.menu {
+  width: 100%;
+
+  border: none;
+  background: transparent;
+
+  padding: 18px 25px;
+
+  margin-bottom: 10px;
+
+  border-radius: 14px;
+
+  text-align: left;
+
+  font-size: 19px;
+
+  cursor: pointer;
+
+  color: #172744;
+}
+
+
+.menu.active {
+  background: #2478e8;
+  color: white;
+}
+
+
+/* MAIN */
+
+.main {
+  flex: 1;
+
+  padding: 35px 50px;
+
+  max-width: 1300px;
+}
+
+
+.main h1 {
+  font-size: 45px;
+  margin-bottom: 8px;
+}
+
+.subtitle {
+  color: #596780;
+  font-size: 19px;
+
+  margin-bottom: 30px;
+}
+
+
+/* BANNER */
+
+.banner {
+  background: #eef5ff;
+
+  padding: 20px 30px;
+
+  border-radius: 15px;
+
+  display: flex;
+  align-items: center;
+
+  gap: 25px;
+
+  margin-bottom: 40px;
+}
+
+.heart {
+  width: 60px;
+  height: 60px;
+
+  border-radius: 50%;
+
+  background: #dfecff;
+
+  color: #1870df;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 45px;
+}
+
+.banner h3 {
+  font-size: 23px;
+  margin-bottom: 8px;
+}
+
+.banner p {
+  color: #596780;
+}
+
+
+/* TITLE */
+
+.title {
+  font-size: 30px;
+  margin-bottom: 25px;
+}
+
+
+/* MEDICINE CARD */
+
+.medicine {
+  min-height: 150px;
+
+  border-radius: 16px;
+
+  display: flex;
+  align-items: center;
+
+  padding: 25px 30px;
+
+  gap: 35px;
+
+  margin-bottom: 20px;
+}
+
+
+/* COLORS */
+
+.green {
+  background: #edf9f2;
+}
+
+.yellow {
+  background: #fff9e9;
+}
+
+.purple {
+  background: #f4efff;
+}
+
+
+/* MEDICINE ICON */
+
+.medicine-icon {
+  width: 85px;
+  height: 85px;
+
+  border-radius: 50%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  font-size: 45px;
+}
+
+
+/* MEDICINE INFO */
+
+.medicine-info {
+  flex: 1;
+}
+
+.medicine-info h2 {
+  font-size: 30px;
+  margin-bottom: 5px;
+}
+
+.medicine-info h3 {
+  font-size: 22px;
+  margin-bottom: 6px;
+}
+
+.medicine-info p {
+  color: #657085;
+  font-size: 18px;
+}
+
+
+/* BUTTON */
+
+.take-button {
+  background: #25a45b;
+
+  border: none;
+
+  color: white;
+
+  padding: 17px 35px;
+
+  border-radius: 12px;
+
+  font-size: 18px;
+
+  font-weight: bold;
+
+  cursor: pointer;
+}
+
+.take-button:hover {
+  background: #188b49;
+}
+
+
+/* OTHER PAGES */
+
+.hidden {
+  display: none;
+}
+
+.box {
+  background: white;
+
+  border: 1px solid #e3e9f0;
+
+  border-radius: 15px;
+
+  padding: 25px;
+
+  box-shadow: 0 5px 20px rgba(0,0,0,0.04);
+}
+
+.box h3 {
+  margin-bottom: 8px;
+}
+
+.box p {
+  color: #68758b;
+}
+
+.box hr {
+  border: none;
+  border-top: 1px solid #eee;
+
+  margin: 20px 0;
+}
+
+.box label {
+  display: flex;
+  justify-content: space-between;
+
+  font-size: 18px;
+}
+footer{
+  display: flex;
+  justify-content: center;
+  background-color: silver;
+  color: #071735;
+}
+
+
+/* MOBILE */
+
+@media (max-width: 800px) {
+
+  .header {
+    padding: 15px;
+  }
+
+  .logo h2 {
+    font-size: 22px;
+  }
+
+  .logo p {
+    display: none;
+  }
+
+  .profile span {
+    display: none;
+  }
+
+  .container {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 10px;
+  }
+
+  .menu {
+    display: inline-block;
+    width: auto;
+    padding: 12px;
+  }
+
+  .main {
+    padding: 25px 15px;
+  }
+
+  .main h1 {
+    font-size: 35px;
+  }
+
+  .medicine {
+    flex-wrap: wrap;
+  }
+
+  .take-button {
+    width: 100%;
+  }
+
+}
