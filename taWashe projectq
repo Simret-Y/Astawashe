@@ -1,0 +1,254 @@
+ Astawashe_compiled/.gitignore                      |   73 [32m+[m
+ Astawashe_compiled/AstaWashe.pdf                   |  Bin [31m0[m -> [32m864941[m bytes
+ Astawashe_compiled/AudioAlert/Alert.mp3            |  Bin [31m0[m -> [32m77462[m bytes
+ Astawashe_compiled/AudioAlert/SmsAlert.jpg         |  Bin [31m0[m -> [32m79357[m bytes
+ Astawashe_compiled/ER.png                          |  Bin [31m0[m -> [32m1659073[m bytes
+ Astawashe_compiled/RoadMap.png                     |  Bin [31m0[m -> [32m1791250[m bytes
+ Astawashe_compiled/Server2/.gitignore              |   41 [32m+[m
+ Astawashe_compiled/Server2/AI_Assistant/.gitignore |  207 [32m+[m
+ Astawashe_compiled/Server2/AI_Assistant/app.py     |  287 [32m++[m
+ .../Server2/AI_Assistant/data/Medical_book.pdf     |  Bin [31m0[m -> [32m16127037[m bytes
+ Astawashe_compiled/Server2/AI_Assistant/index.py   |   76 [32m+[m
+ .../Server2/AI_Assistant/requirements.txt          |   11 [32m+[m
+ Astawashe_compiled/Server2/AI_Assistant/setup.py   |   10 [32m+[m
+ .../Server2/AI_Assistant/src/__init__.py           |    0
+ .../Server2/AI_Assistant/src/helper.py             |   54 [32m+[m
+ .../Server2/AI_Assistant/src/prompt.py             |   45 [32m+[m
+ Astawashe_compiled/Server2/AI_Feature/.gitignore   |    1 [32m+[m
+ Astawashe_compiled/Server2/AI_Feature/__init__.py  |    1 [32m+[m
+ .../Server2/AI_Feature/notifications.py            |  127 [32m+[m
+ Astawashe_compiled/Server2/run_frontend.bat        |    8 [32m+[m
+ Astawashe_compiled/Server2/run_server.bat          |    8 [32m+[m
+ Astawashe_compiled/Server2/server.py               |   10 [32m+[m
+ Astawashe_compiled/Server2_BACKUP/.gitignore       |   41 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/.gitignore         |  207 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/app.py             |  287 [32m++[m
+ .../AI_Assistant/data/Medical_book.pdf             |  Bin [31m0[m -> [32m16127037[m bytes
+ .../Server2_BACKUP/AI_Assistant/index.py           |   76 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/requirements.txt   |   11 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/setup.py           |   10 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/src/__init__.py    |    0
+ .../Server2_BACKUP/AI_Assistant/src/helper.py      |   54 [32m+[m
+ .../Server2_BACKUP/AI_Assistant/src/prompt.py      |   45 [32m+[m
+ .../Server2_BACKUP/AI_Feature/.gitignore           |    1 [32m+[m
+ .../Server2_BACKUP/AI_Feature/__init__.py          |    1 [32m+[m
+ .../Server2_BACKUP/AI_Feature/notifications.py     |  127 [32m+[m
+ Astawashe_compiled/Server2_BACKUP/run_frontend.bat |    8 [32m+[m
+ Astawashe_compiled/Server2_BACKUP/run_server.bat   |    8 [32m+[m
+ Astawashe_compiled/Server2_BACKUP/server.py        |   10 [32m+[m
+ Astawashe_compiled/frontend/.env.example           |    2 [32m+[m
+ Astawashe_compiled/frontend/.gitignore             |   30 [32m+[m
+ Astawashe_compiled/frontend/README.md              |   73 [32m+[m
+ Astawashe_compiled/frontend/SignUp_LogIn_Form.html |   82 [32m+[m
+ Astawashe_compiled/frontend/eslint.config.js       |   22 [32m+[m
+ Astawashe_compiled/frontend/index.html             |   39 [32m+[m
+ Astawashe_compiled/frontend/package-lock.json      | 4051 [32m++++++++++++++++[m
+ Astawashe_compiled/frontend/package.json           |   38 [32m+[m
+ .../public/AstaWashe/SignUp_LogIn_Form.css         |  351 [32m++[m
+ .../public/AstaWashe/css/bootstrap.min.css         |    6 [32m+[m
+ .../frontend/public/AstaWashe/css/chatbot.css      |  714 [32m+++[m
+ .../frontend/public/AstaWashe/css/style.css        |  267 [32m++[m
+ .../frontend/public/AstaWashe/img/about.jpg        |  Bin [31m0[m -> [32m71476[m bytes
+ .../frontend/public/AstaWashe/img/about1           |  Bin [31m0[m -> [32m3355885[m bytes
+ .../frontend/public/AstaWashe/img/app.png          |  Bin [31m0[m -> [32m1421085[m bytes
+ .../frontend/public/AstaWashe/img/appointment.jpg  |  Bin [31m0[m -> [32m41349[m bytes
+ .../frontend/public/AstaWashe/img/blog-1.jpg       |  Bin [31m0[m -> [32m33043[m bytes
+ .../frontend/public/AstaWashe/img/blog-2.jpg       |  Bin [31m0[m -> [32m36561[m bytes
+ .../frontend/public/AstaWashe/img/blog-3.jpg       |  Bin [31m0[m -> [32m30668[m bytes
+ .../frontend/public/AstaWashe/img/hero.jpg         |  Bin [31m0[m -> [32m79874[m bytes
+ .../frontend/public/AstaWashe/img/hero1.jpg        |  Bin [31m0[m -> [32m1818004[m bytes
+ .../frontend/public/AstaWashe/img/hero1.png        |  Bin [31m0[m -> [32m1760452[m bytes
+ .../frontend/public/AstaWashe/img/hero2            |  Bin [31m0[m -> [32m1760452[m bytes
+ .../frontend/public/AstaWashe/img/hero3.png        |  Bin [31m0[m -> [32m2113656[m bytes
+ .../frontend/public/AstaWashe/img/hero4.png        |  Bin [31m0[m -> [32m2112410[m bytes
+ .../frontend/public/AstaWashe/img/price-1.jpg      |  Bin [31m0[m -> [32m14449[m bytes
+ .../frontend/public/AstaWashe/img/price-2.jpg      |  Bin [31m0[m -> [32m14624[m bytes
+ .../frontend/public/AstaWashe/img/price-3.jpg      |  Bin [31m0[m -> [32m14696[m bytes
+ .../frontend/public/AstaWashe/img/price-4.jpg      |  Bin [31m0[m -> [32m16665[m bytes
+ .../frontend/public/AstaWashe/img/team-1.jpg       |  Bin [31m0[m -> [32m17964[m bytes
+ .../frontend/public/AstaWashe/img/team-2.jpg       |  Bin [31m0[m -> [32m141580[m bytes
+ .../frontend/public/AstaWashe/img/team-3.jpg       |  Bin [31m0[m -> [32m17964[m bytes
+ .../frontend/public/AstaWashe/img/team-4.jpg       |  Bin [31m0[m -> [32m23948[m bytes
+ .../frontend/public/AstaWashe/img/test1.png        |  Bin [31m0[m -> [32m466769[m bytes
+ .../frontend/public/AstaWashe/img/test2.png        |  Bin [31m0[m -> [32m325024[m bytes
+ .../frontend/public/AstaWashe/img/test3.png        |  Bin [31m0[m -> [32m3975500[m bytes
+ .../frontend/public/AstaWashe/js/chatbot.js        |  102 [32m+[m
+ .../frontend/public/AstaWashe/js/main.js           |  104 [32m+[m
+ .../frontend/public/AstaWashe/lib/easing/easing.js |  168 [32m+[m
+ .../public/AstaWashe/lib/easing/easing.min.js      |    1 [32m+[m
+ .../public/AstaWashe/lib/owlcarousel/LICENSE       |   23 [32m+[m
+ .../lib/owlcarousel/assets/ajax-loader.gif         |  Bin [31m0[m -> [32m3208[m bytes
+ .../lib/owlcarousel/assets/owl.carousel.css        |  170 [32m+[m
+ .../lib/owlcarousel/assets/owl.carousel.min.css    |    6 [32m+[m
+ .../lib/owlcarousel/assets/owl.theme.default.css   |   50 [32m+[m
+ .../owlcarousel/assets/owl.theme.default.min.css   |    6 [32m+[m
+ .../lib/owlcarousel/assets/owl.theme.green.css     |   50 [32m+[m
+ .../lib/owlcarousel/assets/owl.theme.green.min.css |    6 [32m+[m
+ .../lib/owlcarousel/assets/owl.video.play.png      |  Bin [31m0[m -> [32m4976[m bytes
+ .../AstaWashe/lib/owlcarousel/owl.carousel.js      | 3275 [32m+++++++++++++[m
+ .../AstaWashe/lib/owlcarousel/owl.carousel.min.js  |    7 [32m+[m
+ .../css/tempusdominus-bootstrap-4.css              |  206 [32m+[m
+ .../css/tempusdominus-bootstrap-4.min.css          |  206 [32m+[m
+ .../lib/tempusdominus/js/moment-timezone.min.js    |    1 [32m+[m
+ .../AstaWashe/lib/tempusdominus/js/moment.min.js   |    1 [32m+[m
+ .../tempusdominus/js/tempusdominus-bootstrap-4.js  | 2779 [32m+++++++++++[m
+ .../js/tempusdominus-bootstrap-4.min.js            |    7 [32m+[m
+ .../public/AstaWashe/lib/waypoints/links.php       |    5 [32m+[m
+ .../AstaWashe/lib/waypoints/waypoints.min.js       |    7 [32m+[m
+ Astawashe_compiled/frontend/public/favicon.svg     |    1 [32m+[m
+ Astawashe_compiled/frontend/public/icons.svg       |   24 [32m+[m
+ .../frontend/public/images/SmsAlert.jpg            |  Bin [31m0[m -> [32m79357[m bytes
+ .../frontend/public/images/audio/Alert.mp3         |  Bin [31m0[m -> [32m77462[m bytes
+ .../frontend/public/images/registration/p1.png     |  Bin [31m0[m -> [32m10860[m bytes
+ .../frontend/public/images/registration/p2.png     |  Bin [31m0[m -> [32m7545[m bytes
+ .../frontend/public/images/registration/pe.png     |  Bin [31m0[m -> [32m35019[m bytes
+ Astawashe_compiled/frontend/src/App.css            |   89 [32m+[m
+ Astawashe_compiled/frontend/src/App.tsx            |   83 [32m+[m
+ .../src/AstaWashe/components/BackToTop.tsx         |    3 [32m+[m
+ .../frontend/src/AstaWashe/components/Chatbot.tsx  |  720 [32m+++[m
+ .../frontend/src/AstaWashe/components/Footer.tsx   |   77 [32m+[m
+ .../frontend/src/AstaWashe/components/Layout.tsx   |   15 [32m+[m
+ .../frontend/src/AstaWashe/components/Navbar.tsx   |  188 [32m+[m
+ .../frontend/src/AstaWashe/components/Topbar.tsx   |   40 [32m+[m
+ .../frontend/src/AstaWashe/components/chatbot.css  |  702 [32m+++[m
+ .../frontend/src/AstaWashe/lib/api.ts              |   63 [32m+[m
+ .../frontend/src/AstaWashe/lib/assets.ts           |    3 [32m+[m
+ .../frontend/src/AstaWashe/lib/auth.ts             |  106 [32m+[m
+ .../frontend/src/AstaWashe/lib/mockChat.ts         |  300 [32m++[m
+ .../frontend/src/AstaWashe/pages/About.tsx         |  422 [32m++[m
+ .../src/AstaWashe/pages/AdminDashboard.tsx         | 2598 [32m+++++++++++[m
+ .../frontend/src/AstaWashe/pages/Appointment.tsx   |   63 [32m+[m
+ .../frontend/src/AstaWashe/pages/Auth.tsx          |  730 [32m+++[m
+ .../frontend/src/AstaWashe/pages/Blog.tsx          |   37 [32m+[m
+ .../frontend/src/AstaWashe/pages/BlogDetail.tsx    |   74 [32m+[m
+ .../frontend/src/AstaWashe/pages/CaseDetail.tsx    |  280 [32m++[m
+ .../frontend/src/AstaWashe/pages/Community.tsx     |  243 [32m+[m
+ .../frontend/src/AstaWashe/pages/Contact.tsx       |   78 [32m+[m
+ .../frontend/src/AstaWashe/pages/CreateCase.tsx    |  160 [32m+[m
+ .../frontend/src/AstaWashe/pages/Dashboards.tsx    |  137 [32m+[m
+ .../src/AstaWashe/pages/DoctorDashboard.tsx        | 4839 [32m++++++++++++++++++++[m
+ .../frontend/src/AstaWashe/pages/Habits.tsx        |  299 [32m++[m
+ .../frontend/src/AstaWashe/pages/Home.tsx          |  738 [32m+++[m
+ .../src/AstaWashe/pages/HospitalDashboard.tsx      | 1595 [32m+++++++[m
+ .../frontend/src/AstaWashe/pages/Hospitals.tsx     |  222 [32m+[m
+ .../frontend/src/AstaWashe/pages/Notifications.tsx |   97 [32m+[m
+ .../src/AstaWashe/pages/PatientDashboard.tsx       | 3631 [32m+++++++++++++++[m
+ .../src/AstaWashe/pages/PendingApproval.tsx        |  467 [32m++[m
+ .../frontend/src/AstaWashe/pages/Price.tsx         |  114 [32m+[m
+ .../frontend/src/AstaWashe/pages/Reminders.tsx     |  335 [32m++[m
+ .../frontend/src/AstaWashe/pages/Search.tsx        |   57 [32m+[m
+ .../frontend/src/AstaWashe/pages/Service.tsx       |   35 [32m+[m
+ .../frontend/src/AstaWashe/pages/Team.tsx          |   37 [32m+[m
+ .../frontend/src/AstaWashe/pages/Testimonial.tsx   |   34 [32m+[m
+ .../frontend/src/AstaWashe/pages/VerifyEmail.tsx   |  200 [32m+[m
+ .../frontend/src/AstaWashe/styles/auth.css         |  277 [32m++[m
+ .../frontend/src/SignUp_LogIn_Form.css             |  351 [32m++[m
+ .../frontend/src/SignUp_LogIn_Form.js              |   11 [32m+[m
+ Astawashe_compiled/frontend/src/assets/hero.png    |  Bin [31m0[m -> [32m13057[m bytes
+ Astawashe_compiled/frontend/src/assets/react.svg   |    1 [32m+[m
+ Astawashe_compiled/frontend/src/assets/vite.svg    |    1 [32m+[m
+ .../frontend/src/components/Navbar.tsx             |   76 [32m+[m
+ .../frontend/src/components/Sidebar.tsx            |  182 [32m+[m
+ .../frontend/src/components/StatCard.tsx           |   86 [32m+[m
+ .../frontend/src/components/Toast.tsx              |   64 [32m+[m
+ Astawashe_compiled/frontend/src/data/mockData.ts   |  126 [32m+[m
+ Astawashe_compiled/frontend/src/index.css          |    9 [32m+[m
+ Astawashe_compiled/frontend/src/lib/gemini.ts      |   99 [32m+[m
+ Astawashe_compiled/frontend/src/lib/userContext.ts |  129 [32m+[m
+ .../frontend/src/lib/voiceAssistant.ts             |  167 [32m+[m
+ Astawashe_compiled/frontend/src/main.tsx           |   13 [32m+[m
+ .../frontend/src/pages/AlertSystem.tsx             |  188 [32m+[m
+ Astawashe_compiled/frontend/src/pages/Auth.tsx     |    0
+ Astawashe_compiled/frontend/src/pages/Chatbot.tsx  |  325 [32m++[m
+ .../frontend/src/pages/Dashboard.tsx               |  242 [32m+[m
+ Astawashe_compiled/frontend/src/pages/Landing.tsx  |  225 [32m+[m
+ .../frontend/src/pages/PatientStatus.tsx           |  164 [32m+[m
+ .../frontend/src/pages/RegisterPatient.tsx         |  162 [32m+[m
+ Astawashe_compiled/frontend/tsconfig.app.json      |   25 [32m+[m
+ Astawashe_compiled/frontend/tsconfig.json          |    7 [32m+[m
+ Astawashe_compiled/frontend/tsconfig.node.json     |   24 [32m+[m
+ Astawashe_compiled/frontend/vite.config.ts         |   10 [32m+[m
+ Astawashe_compiled/package-lock.json               |    6 [32m+[m
+ Astawashe_compiled/package.json                    |   11 [32m+[m
+ Astawashe_compiled/server1/.env.example            |   37 [32m+[m
+ Astawashe_compiled/server1/.gitignore              |    3 [32m+[m
+ Astawashe_compiled/server1/API_REFERENCE.md        |  356 [32m++[m
+ Astawashe_compiled/server1/QUICK_START.md          |  315 [32m++[m
+ Astawashe_compiled/server1/README.md               |   71 [32m+[m
+ Astawashe_compiled/server1/check-hospital.js       |   21 [32m+[m
+ Astawashe_compiled/server1/fix-hospital-admin.js   |   69 [32m+[m
+ Astawashe_compiled/server1/package-lock.json       | 1548 [32m+++++++[m
+ Astawashe_compiled/server1/package.json            |   34 [32m+[m
+ .../Smart-Health-System.postman_collection.json    |  120 [32m+[m
+ .../Smart-Health-System.postman_environment.json   |   11 [32m+[m
+ Astawashe_compiled/server1/prisma/schema.prisma    |  862 [32m++++[m
+ .../server1/prisma/seed-placeholder.js             |   14 [32m+[m
+ Astawashe_compiled/server1/prisma/seed.js          |   88 [32m+[m
+ Astawashe_compiled/server1/src/app.js              |   18 [32m+[m
+ Astawashe_compiled/server1/src/config/env.js       |   52 [32m+[m
+ .../server1/src/controllers/auth.controller.js     |   68 [32m+[m
+ .../server1/src/controllers/cases.controller.js    |   24 [32m+[m
+ .../server1/src/controllers/doctors.controller.js  |   19 [32m+[m
+ .../server1/src/controllers/habits.controller.js   |   30 [32m+[m
+ .../src/controllers/hospitals.controller.js        |   24 [32m+[m
+ .../server1/src/controllers/messages.controller.js |   14 [32m+[m
+ .../src/controllers/notifications.controller.js    |   25 [32m+[m
+ .../server1/src/controllers/patients.controller.js |   14 [32m+[m
+ .../src/controllers/reminders.controller.js        |   24 [32m+[m
+ .../server1/src/controllers/services.controller.js |   20 [32m+[m
+ Astawashe_compiled/server1/src/db/prisma.js        |    5 [32m+[m
+ Astawashe_compiled/server1/src/index.js            |   37 [32m+[m
+ Astawashe_compiled/server1/src/middlewares/auth.js |   26 [32m+[m
+ .../server1/src/middlewares/error.js               |   14 [32m+[m
+ .../server1/src/middlewares/roles.js               |   40 [32m+[m
+ .../server1/src/middlewares/validate.js            |   14 [32m+[m
+ .../server1/src/routes/adherence.routes.js         |  248 [32m+[m
+ .../server1/src/routes/approvals.routes.js         |  160 [32m+[m
+ .../server1/src/routes/auth.routes.js              |   16 [32m+[m
+ .../server1/src/routes/cases.routes.js             |   14 [32m+[m
+ .../server1/src/routes/dashboard.routes.js         |  773 [32m++++[m
+ .../server1/src/routes/demo-center.routes.js       |  274 [32m++[m
+ .../server1/src/routes/doctors.routes.js           |   12 [32m+[m
+ .../server1/src/routes/guardians.routes.js         |  285 [32m++[m
+ .../server1/src/routes/habits.routes.js            |   15 [32m+[m
+ .../server1/src/routes/hospitals.routes.js         |   18 [32m+[m
+ Astawashe_compiled/server1/src/routes/index.js     |   43 [32m+[m
+ .../server1/src/routes/medications.routes.js       |  120 [32m+[m
+ .../server1/src/routes/messages.routes.js          |   12 [32m+[m
+ .../server1/src/routes/notifications.routes.js     |   13 [32m+[m
+ .../server1/src/routes/patients.routes.js          |   35 [32m+[m
+ .../server1/src/routes/reminders.routes.js         |  129 [32m+[m
+ .../server1/src/routes/services.routes.js          |   14 [32m+[m
+ .../src/scripts/fetch_prisma_notification_data.js  |  100 [32m+[m
+ .../server1/src/services/adherence.service.js      |  309 [32m++[m
+ .../server1/src/services/approval.service.js       |  434 [32m++[m
+ .../server1/src/services/auth.service.js           |  533 [32m+++[m
+ .../server1/src/services/case.service.js           |   95 [32m+[m
+ .../server1/src/services/doctor.service.js         |   55 [32m+[m
+ .../server1/src/services/email.service.js          |   87 [32m+[m
+ .../server1/src/services/habit.service.js          |   89 [32m+[m
+ .../server1/src/services/hospital.service.js       |  205 [32m+[m
+ .../server1/src/services/medication.service.js     |  247 [32m+[m
+ .../server1/src/services/message.service.js        |   46 [32m+[m
+ .../src/services/notification-provider.service.js  |  160 [32m+[m
+ .../server1/src/services/notification.service.js   |   36 [32m+[m
+ .../server1/src/services/patient.service.js        |   39 [32m+[m
+ .../src/services/reminder-engine.service.js        |  309 [32m++[m
+ .../server1/src/services/reminder.service.js       |   81 [32m+[m
+ .../server1/src/services/service.service.js        |   29 [32m+[m
+ .../server1/src/services/streak.service.js         |   67 [32m+[m
+ Astawashe_compiled/server1/src/utils/async.js      |    7 [32m+[m
+ Astawashe_compiled/server1/src/utils/crypto.js     |    7 [32m+[m
+ Astawashe_compiled/server1/src/utils/time.js       |   21 [32m+[m
+ Astawashe_compiled/server1/src/utils/token.js      |   24 [32m+[m
+ .../server1/src/validators/auth.schemas.js         |   79 [32m+[m
+ .../server1/src/validators/case.schemas.js         |   19 [32m+[m
+ .../server1/src/validators/common.js               |   11 [32m+[m
+ .../server1/src/validators/habit.schemas.js        |   35 [32m+[m
+ .../server1/src/validators/hospital.schemas.js     |   13 [32m+[m
+ .../server1/src/validators/message.schemas.js      |   11 [32m+[m
+ .../server1/src/validators/notification.schemas.js |   13 [32m+[m
+ .../server1/src/validators/patient.schemas.js      |   16 [32m+[m
+ .../server1/src/validators/reminder.schemas.js     |   30 [32m+[m
+ .../server1/src/validators/service.schemas.js      |   13 [32m+[m
+ 253 files changed, 47035 insertions(+)

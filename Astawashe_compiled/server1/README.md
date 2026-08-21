@@ -7,7 +7,7 @@
 
 ## Setup
 1. Create a database in Postgres:
-   - `CREATE DATABASE hackhaton_sis;`
+   - `CREATE DATABASE astwashe_insa;`
 2. Update `.env` if needed.
 3. Install dependencies:
    - `npm install`

@@ -8,7 +8,7 @@ export default function Footer() {
               <h4 className="d-inline-block text-primary text-uppercase border-bottom border-5 border-secondary mb-4">
                 Get In Touch
               </h4>
-              <p className="mb-4">No dolore ipsum accusam no lorem. Invidunt sed clita kasd clita et et dolor sed dolor</p>
+              <p className="mb-4"></p>
               <p className="mb-2"><i className="fa fa-map-marker-alt text-primary me-3"></i>Addis Ababa, Ethiopia</p>
               <p className="mb-2"><i className="fa fa-envelope text-primary me-3"></i>AstaWashe@insa.edu.et</p>
               <p className="mb-0"><i className="fa fa-phone-alt text-primary me-3"></i>+25906088808</p>
