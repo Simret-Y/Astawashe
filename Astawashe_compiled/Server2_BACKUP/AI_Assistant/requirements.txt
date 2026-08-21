@@ -1,0 +1,11 @@
+langchain>=0.1.0,<0.2
+langchain-core>=0.1.40,<0.2
+langchain-community>=0.0.10,<0.1
+langchain-groq>=0.1.0,<0.2
+langchain-pinecone>=0.0.1,<0.1
+pinecone-client>=3.0.0
+sentence-transformers>=2.2.0
+pypdf>=3.17.0
+flask>=2.3.0
+flask-cors>=3.0.10
+python-dotenv>=1.0.0

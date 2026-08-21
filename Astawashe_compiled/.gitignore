@@ -1,0 +1,73 @@
+# ================================
+# AstaWashe Root Git Ignore
+# ================================
+
+# Environment / Secrets
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Build output
+dist/
+build/
+coverage/
+.vite/
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+.venv/
+venv/
+env/
+
+# Python environment
+*.egg-info/
+
+# Prisma / local databases
+*.db
+*.db-journal
+
+# IDE
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Runtime/cache
+.cache/
+.pytest_cache/
+
+# Local uploads
+uploads/
+
+# Secrets / certificates
+*.pem
+*.key
+
+# Keep documentation and project assets
+!*.md
+!*.png
+!*.jpg
+!*.jpeg
+!*.pdf

@@ -1,0 +1,120 @@
+{
+  "info": {
+    "name": "Smart Health System MVP",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health",
+      "request": {
+        "method": "GET",
+        "url": "{{base_url}}/health"
+      }
+    },
+    {
+      "name": "Auth - Register Patient",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/auth/register",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient2@example.com\",\n  \"password\": \"Passw0rd!\",\n  \"role\": \"PATIENT\",\n  \"fullName\": \"Meron Alemu\",\n  \"medicalHistory\": \"Diabetes\",\n  \"caseDescription\": \"Tiredness and dizziness\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Auth - Login (Seed Patient)",
+      "request": {
+        "method": "POST",
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
+        "url": "{{base_url}}/auth/login",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"patient@example.com\",\n  \"password\": \"Passw0rd!\"\n}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "const data = pm.response.json();",
+              "pm.environment.set('access_token', data.tokens.accessToken);",
+              "pm.environment.set('refresh_token', data.tokens.refreshToken);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Patient - Get Profile",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/patients/me"
+      }
+    },
+    {
+      "name": "Hospitals - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/hospitals"
+      }
+    },
+    {
+      "name": "Doctors - List",
+      "request": {
+        "method": "GET",
+        "header": [{ "key": "Authorization", "value": "Bearer {{access_token}}" }],
+        "url": "{{base_url}}/doctors"
+      }
+    },
+    {
+      "name": "Cases - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": "{{base_url}}/cases",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"doctorId\": \"{{doctor_id}}\",\n  \"title\": \"Follow-up consult\",\n  \"description\": \"Need to review blood test results\"\n}"
+        }
+      }
+    },
+    {
+      "name": "Reminders - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": "{{base_url}}/reminders",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"type\": \"MEDICATION\",\n  \"title\": \"Vitamin D\",\n  \"timesPerDay\": 3,\n  \"schedule\": { \"times\": [\"08:00\", \"14:00\", \"20:00\"], \"warning\": \"red\" }\n}"
+        }
+      }
+    },
+    {
+      "name": "Habits - Create",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" },
+          { "key": "Authorization", "value": "Bearer {{access_token}}" }
+        ],
+        "url": "{{base_url}}/habits",
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"title\": \"Hydration 2L\",\n  \"frequencyPerWeek\": 7\n}"
+        }
+      }
+    }
+  ]
+}

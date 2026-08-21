@@ -1,0 +1,862 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+enum Role {
+  PATIENT
+  DOCTOR
+  HOSPITAL_ADMIN
+  SYSTEM_ADMIN
+  HEALTHCARE_WORKER
+  GUARDIAN
+}
+
+enum CaseStatus {
+  OPEN
+  IN_PROGRESS
+  CLOSED
+}
+
+enum ReminderType {
+  MEDICATION
+  HABIT
+}
+
+enum HospitalStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  SUSPENDED
+}
+
+enum DoctorStatus {
+  PENDING_HOSPITAL_APPROVAL
+  HOSPITAL_APPROVED
+  PENDING_SYSTEM_APPROVAL
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum PatientStatus {
+  PENDING_DOCTOR_APPROVAL
+  DOCTOR_APPROVED
+  PENDING_SYSTEM_APPROVAL
+  ACTIVE
+  REJECTED
+  SUSPENDED
+}
+
+enum ApprovalAction {
+  APPROVE
+  REJECT
+  REQUEST_MORE_INFO
+  SUSPEND
+  REACTIVATE
+}
+
+enum DoseStatus {
+  PENDING
+  TAKEN
+  MISSED
+  NOT_TAKEN
+  SNOOZED
+  SKIPPED
+}
+
+enum NotificationChannel {
+  VOICE
+  SMS
+  USSD
+  PUSH
+  EMAIL
+}
+
+enum GuardianRelationshipType {
+  PARENT
+  CHILD
+  SPOUSE
+  SIBLING
+  CAREGIVER
+  OTHER
+}
+
+enum SubscriptionPlan {
+  MONTHLY
+  YEARLY
+}
+
+// ==================== CORE USER MODELS ====================
+model User {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  phone         String?  @unique
+  passwordHash  String
+  role          Role
+  isActive      Boolean  @default(true)
+  emailVerified Boolean  @default(false)
+  otpHash       String?
+  otpExpiresAt  DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  // Profile relations
+  patientProfile       PatientProfile?
+  doctorProfile        Doctor?
+  hospitalAdminProfile HospitalAdmin?
+  guardianProfile      Guardian?
+
+  // Auth
+  refreshTokens RefreshToken[]
+
+  // Communications
+  sentMessages      Message[]
+  sentNotifications Notification[]
+
+  // Audit
+  auditLogs AuditLog[]
+
+  @@index([email])
+  @@index([phone])
+  @@index([role])
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model PendingRegistration {
+  id           String   @id @default(cuid())
+  email        String?  @unique
+  phone        String?  @unique
+  passwordHash String
+  role         Role
+  fullName     String?
+  // Free-form payload for extra profile fields (patient details, hospitalId, etc)
+  payload      Json?
+  otpHash      String?
+  otpExpiresAt DateTime?
+  createdAt    DateTime @default(now())
+
+  @@index([email])
+  @@index([phone])
+}
+
+// ==================== HOSPITAL & ORGANIZATION ====================
+model Hospital {
+  id                 String  @id @default(cuid())
+  name               String
+  organizationType   String? // Clinic, Hospital, Health Center
+  licenseNumber      String? @unique
+  registrationNumber String? @unique
+  address            String?
+  city               String?
+  region             String?
+  phone              String?
+  email              String?
+  website            String?
+  description        String?
+  imageUrl           String?
+
+  // Status
+  status HospitalStatus @default(PENDING)
+
+  // Admin
+  adminId String?
+  admin   HospitalAdmin?
+
+  // Relations
+  doctors         Doctor[]
+  patients        PatientHospitalLink[]
+  services        Service[]
+  subscriptions   Subscription[]
+  approvals       HospitalApproval[]
+  documents       HospitalDocument[]
+  patientProfiles PatientProfile[]      @relation("PatientHospital")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([adminId])
+}
+
+model HospitalAdmin {
+  id         String  @id @default(cuid())
+  userId     String  @unique
+  hospitalId String  @unique
+  fullName   String
+  phone      String?
+
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model HospitalDocument {
+  id           String   @id @default(cuid())
+  hospitalId   String
+  documentType String // License, Registration, etc
+  documentPath String
+  uploadedAt   DateTime @default(now())
+  hospital     Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+}
+
+model HospitalApproval {
+  id             String         @id @default(cuid())
+  hospitalId     String
+  approverUserId String?
+  action         ApprovalAction
+  reason         String?
+  previousStatus HospitalStatus
+  newStatus      HospitalStatus
+  createdAt      DateTime       @default(now())
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@index([hospitalId])
+  @@index([approverUserId])
+}
+
+// ==================== DOCTOR ====================
+model Doctor {
+  id             String  @id @default(cuid())
+  userId         String  @unique
+  hospitalId     String
+  name           String
+  email          String?
+  phone          String?
+  licenseNumber  String? @unique
+  specialization String?
+  experience     String?
+  bio            String?
+  imageUrl       String?
+
+  // Status
+  status DoctorStatus @default(PENDING_HOSPITAL_APPROVAL)
+
+  // Relations
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital Hospital @relation(fields: [hospitalId], references: [id])
+
+  medications         Medication[]
+  prescriptions       Prescription[]
+  medicationSchedules MedicationSchedule[]
+  voiceProfiles       VoiceProfile[]
+  approvals           DoctorApproval[]
+  assignedPatients    PatientProfile[]     @relation("PatientDoctor")
+  cases               Case[]
+
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  patientDoctorLinks PatientDoctorLink[]
+
+  @@index([hospitalId])
+  @@index([status])
+}
+
+model DoctorApproval {
+  id             String         @id @default(cuid())
+  doctorId       String
+  approverUserId String?
+  approvalLevel  String // HOSPITAL or SYSTEM_ADMIN
+  action         ApprovalAction
+  reason         String?
+  previousStatus DoctorStatus
+  newStatus      DoctorStatus
+  createdAt      DateTime       @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@index([doctorId])
+  @@index([approvalLevel])
+}
+
+// ==================== PATIENT ====================
+model PatientProfile {
+  id         String @id @default(cuid())
+  userId     String @unique
+  hospitalId String
+  doctorId   String
+
+  // Identity
+  fullName String
+  nickname String?   @unique // For privacy
+  dob      DateTime?
+  gender   String?
+
+  // Contact
+  phone                 String?
+  address               String?
+  emergencyContact      String?
+  emergencyContactPhone String?
+
+  // Medical
+  bloodGroup        String?
+  height            Float?
+  weight            Float?
+  allergies         String?
+  chronicConditions String?
+  medicalHistory    String?
+
+  // Status
+  status PatientStatus @default(PENDING_DOCTOR_APPROVAL)
+
+  // Preferences
+  reminderMode NotificationChannel @default(VOICE)
+  language     String              @default("en") // en, am, om, ti, so
+
+  // Relations
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital       Hospital @relation("PatientHospital", fields: [hospitalId], references: [id])
+  assignedDoctor Doctor   @relation("PatientDoctor", fields: [doctorId], references: [id])
+
+  // Health
+  medications   Medication[]
+  prescriptions Prescription[]
+  schedules     MedicationSchedule[]
+  reminders     Reminder[]
+  habits        Habit[]
+  adherenceLogs AdherenceLog[]
+  doseLogs      DoseLog[]
+  voiceProfiles VoiceProfile[]
+
+  // Social
+  guardians PatientGuardian[]
+  cases     Case[]
+
+  // Approval
+  approvals PatientApproval[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hospitalId])
+  @@index([doctorId])
+  @@index([status])
+  @@index([nickname])
+}
+
+model PatientHospitalLink {
+  id            String   @id @default(cuid())
+  patientUserId String
+  hospitalId    String
+  linkedAt      DateTime @default(now())
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@unique([patientUserId, hospitalId])
+}
+
+model PatientDoctorLink {
+  id            String   @id @default(cuid())
+  patientUserId String
+  doctorId      String
+  linkedAt      DateTime @default(now())
+
+  doctor Doctor @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+
+  @@unique([patientUserId, doctorId])
+}
+
+model PatientApproval {
+  id             String         @id @default(cuid())
+  patientId      String
+  approverUserId String?
+  approvalLevel  String // DOCTOR or SYSTEM_ADMIN
+  action         ApprovalAction
+  reason         String?
+  previousStatus PatientStatus
+  newStatus      PatientStatus
+  createdAt      DateTime       @default(now())
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId])
+  @@index([approvalLevel])
+}
+
+// ==================== MEDICATION & PRESCRIPTIONS ====================
+model Medication {
+  id           String  @id @default(cuid())
+  patientId    String
+  doctorId     String
+  name         String
+  genericName  String?
+  dosage       String
+  strength     Float?
+  form         String? // Tablet, Capsule, Liquid, etc
+  manufacturer String?
+  instructions String?
+  notes        String?
+  isActive     Boolean @default(true)
+
+  user   PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor Doctor         @relation(fields: [doctorId], references: [id])
+
+  prescriptions Prescription[]
+  schedules     MedicationSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Prescription {
+  id           String @id @default(cuid())
+  patientId    String
+  doctorId     String
+  medicationId String
+
+  dose         String
+  frequency    String // DAILY, WEEKLY, CUSTOM
+  startDate    DateTime
+  endDate      DateTime?
+  instructions String?
+
+  medication Medication     @relation(fields: [medicationId], references: [id], onDelete: Cascade)
+  patient    PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor     Doctor         @relation(fields: [doctorId], references: [id])
+
+  schedules MedicationSchedule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model MedicationSchedule {
+  id             String  @id @default(cuid())
+  patientId      String
+  doctorId       String
+  medicationId   String
+  prescriptionId String?
+
+  // Schedule details
+  dosage         String
+  time           String // HH:MM format
+  frequency      String // DAILY, SPECIFIC_DAYS, CUSTOM
+  specificDays   String? // JSON array of days
+  customInterval Int? // For custom intervals in hours
+
+  startDate DateTime
+  endDate   DateTime?
+  isActive  Boolean   @default(true)
+
+  // Relations
+  patient      PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor       Doctor         @relation(fields: [doctorId], references: [id])
+  medication   Medication     @relation(fields: [medicationId], references: [id])
+  prescription Prescription?  @relation(fields: [prescriptionId], references: [id], onDelete: SetNull)
+
+  reminders Reminder[]
+  doseLogs  DoseLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([startDate])
+  @@index([isActive])
+}
+
+// ==================== REMINDERS & ADHERENCE ====================
+model Reminder {
+  id          String       @id @default(cuid())
+  patientId   String
+  scheduleId  String?
+  type        ReminderType
+  title       String
+  note        String?
+  timesPerDay Int?
+  schedule    Json?
+  startDate   DateTime?
+  endDate     DateTime?
+  isActive    Boolean      @default(true)
+
+  // Reminder configuration
+  channel        NotificationChannel @default(VOICE)
+  voiceProfileId String?
+
+  patient            PatientProfile      @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  medicationSchedule MedicationSchedule? @relation(fields: [scheduleId], references: [id], onDelete: SetNull)
+  voiceProfile       VoiceProfile?       @relation(fields: [voiceProfileId], references: [id], onDelete: SetNull)
+
+  reminderEvents ReminderEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([scheduleId])
+  @@index([isActive])
+}
+
+model ReminderEvent {
+  id            String    @id @default(cuid())
+  reminderId    String
+  scheduledTime DateTime
+  sentAt        DateTime?
+  response      String? // "1", "2", or null
+  responseTime  DateTime?
+  status        String // PENDING, SENT, RESPONDED, EXPIRED
+
+  reminder Reminder @relation(fields: [reminderId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([reminderId])
+  @@index([scheduledTime])
+  @@index([status])
+}
+
+model DoseLog {
+  id            String   @id @default(cuid())
+  patientId     String
+  scheduleId    String
+  scheduledDate DateTime
+
+  status             DoseStatus           @default(PENDING)
+  confirmationMethod NotificationChannel?
+  confirmedAt        DateTime?
+  voiceResponse      String? // "1" or "2"
+  notes              String?
+
+  patient  PatientProfile     @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  schedule MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scheduleId, scheduledDate])
+  @@index([patientId])
+  @@index([scheduleId])
+  @@index([status])
+}
+
+model AdherenceLog {
+  id        String   @id @default(cuid())
+  patientId String
+  date      DateTime
+
+  totalSchedules Int   @default(0)
+  taken          Int   @default(0)
+  missed         Int   @default(0)
+  notTaken       Int   @default(0)
+  adherenceRate  Float // Percentage
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([patientId, date])
+  @@index([patientId])
+  @@index([date])
+}
+
+// ==================== VOICE PROFILES ====================
+model VoiceProfile {
+  id        String @id @default(cuid())
+  doctorId  String
+  patientId String
+
+  language           String  @default("en")
+  preferredName      String?
+  greetingAudioUrl   String?
+  confirmationPrompt String?
+  voiceType          String? // male, female
+
+  isActive Boolean @default(true)
+
+  doctor    Doctor         @relation(fields: [doctorId], references: [id], onDelete: Cascade)
+  patient   PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  reminders Reminder[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([doctorId, patientId])
+  @@index([patientId])
+}
+
+// ==================== GUARDIAN SYSTEM ====================
+model Guardian {
+  id           String  @id @default(cuid())
+  userId       String  @unique
+  fullName     String
+  phone        String?
+  email        String?
+  relationship String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  patients PatientGuardian[]
+  alerts   GuardianAlert[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model PatientGuardian {
+  id               String                   @id @default(cuid())
+  patientId        String
+  guardianId       String
+  relationshipType GuardianRelationshipType
+
+  patient  PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  guardian Guardian       @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([patientId, guardianId])
+  @@index([patientId])
+  @@index([guardianId])
+}
+
+model GuardianAlert {
+  id              String  @id @default(cuid())
+  guardianId      String
+  patientId       String
+  patientNickname String?
+
+  alertType String // THREE_MISSED_DOSES, etc
+  message   String
+  doseCount Int? // Number of consecutive missed doses
+
+  readAt         DateTime?
+  acknowledgedAt DateTime?
+
+  guardian Guardian @relation(fields: [guardianId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([guardianId])
+  @@index([readAt])
+}
+
+// ==================== COMMUNICATION ====================
+model Case {
+  id          String     @id @default(cuid())
+  patientId   String
+  doctorId    String
+  title       String
+  description String
+  status      CaseStatus @default(OPEN)
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  doctor  Doctor         @relation(fields: [doctorId], references: [id])
+
+  messages Message[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+  @@index([doctorId])
+}
+
+model Message {
+  id          String  @id @default(cuid())
+  caseId      String?
+  senderId    String
+  recipientId String?
+
+  messageType String @default("TEXT") // TEXT, NOTE, ALERT
+  content     String
+
+  sender User  @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  case   Case? @relation(fields: [caseId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([caseId])
+  @@index([senderId])
+  @@index([recipientId])
+}
+
+model Notification {
+  id               String  @id @default(cuid())
+  userId           String
+  title            String
+  message          String
+  notificationType String? // REMINDER, ALERT, APPROVAL, MESSAGE
+  relatedId        String? // Related entity ID
+
+  readAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([userId])
+  @@index([readAt])
+}
+
+// ==================== SUBSCRIPTIONS ====================
+model Subscription {
+  id         String @id @default(cuid())
+  hospitalId String
+
+  plan   SubscriptionPlan
+  status String           @default("ACTIVE") // ACTIVE, INACTIVE, PENDING, CANCELLED
+
+  startDate        DateTime
+  renewalDate      DateTime
+  billingPeriodEnd DateTime?
+
+  activePatients Int @default(0)
+  activeDoctors  Int @default(0)
+
+  monthlyPrice Float?
+  yearlyPrice  Float?
+
+  hospital     Hospital            @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  usageRecords SubscriptionUsage[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([hospitalId])
+  @@index([status])
+}
+
+model SubscriptionUsage {
+  id             String @id @default(cuid())
+  subscriptionId String
+
+  date           DateTime
+  patientCount   Int
+  doctorCount    Int
+  remindersCount Int
+  dosesConfirmed Int
+
+  subscription Subscription @relation(fields: [subscriptionId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([subscriptionId, date])
+  @@index([subscriptionId])
+}
+
+// ==================== HABITS & TRACKING ====================
+model Habit {
+  id               String  @id @default(cuid())
+  patientId        String
+  title            String
+  frequencyPerWeek Int?
+  reminderEnabled  Boolean @default(true)
+
+  patient PatientProfile @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  logs    HabitLog[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([patientId])
+}
+
+model HabitLog {
+  id      String   @id @default(cuid())
+  habitId String
+  date    DateTime
+  status  String
+
+  habit Habit @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([habitId, date])
+  @@index([habitId])
+}
+
+// ==================== SERVICES ====================
+model Service {
+  id          String  @id @default(cuid())
+  hospitalId  String
+  name        String
+  description String?
+  department  String?
+
+  hospital Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([hospitalId])
+}
+
+// ==================== NOTIFICATION DELIVERY ====================
+model NotificationDelivery {
+  id          String              @id @default(cuid())
+  recipientId String
+  channel     NotificationChannel
+  messageType String // REMINDER, ALERT, etc
+
+  scheduledAt DateTime
+  sentAt      DateTime?
+  deliveredAt DateTime?
+  responseAt  DateTime?
+
+  status            String  @default("PENDING") // PENDING, SENT, DELIVERED, FAILED
+  response          String?
+  provider          String  @default("DEMO") // DEMO, ETHIO_TELECOM, etc
+  providerMessageId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([recipientId])
+  @@index([channel])
+  @@index([status])
+}
+
+// ==================== AUDIT LOGGING ====================
+model AuditLog {
+  id         String  @id @default(cuid())
+  actor      String? // User ID
+  action     String // REGISTER, APPROVE, CREATE, UPDATE, etc
+  entityType String // Hospital, Doctor, Patient, etc
+  entityId   String?
+
+  metadata Json?
+
+  user User? @relation(fields: [actor], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+
+  @@index([actor])
+  @@index([action])
+  @@index([entityType])
+  @@index([createdAt])
+}

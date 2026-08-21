@@ -1,0 +1,89 @@
+/* App.css — cleared, all styles are in index.css */
+
+
+.chatbot-window {
+  position: fixed;
+  bottom: 80px;
+  right: 20px;
+  width: 320px;
+  height: 420px;
+  background: white;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+  border-radius: 12px;
+  display: flex;
+  flex-direction: column;
+  z-index: 9999;
+}
+
+.chatbot-launcher {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 9999;
+}
+
+.chatbot-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.chatbot-message.user {
+  text-align: right;
+  background: #007bff;
+  color: white;
+  margin: 5px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+.chatbot-message.bot {
+  text-align: left;
+  background: #eee;
+  margin: 5px;
+  padding: 8px;
+  border-radius: 10px;
+}
+
+  /*** Team Start ***/
+  .team .team-item {
+      position: relative;
+      width: 100%;
+      height: 100%;
+  }
+
+  .team .team-item .team-icon {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+  }
+
+  .team .team-item .team-icon a.share-link {
+      opacity: 0;
+      transition: 0.5s;
+  }
+
+  .team .team-item:hover .team-icon a.share-link {
+      opacity: 1;
+  }
+
+  .team .team-item .team-content,
+  .team .team-item .team-content h4,
+  .team .team-item .team-content p {
+      transition: 0.5s;
+  }
+
+  .team .team-item:hover .team-content {
+      background: var(--bs-primary) !important;
+      border-radius: 0 0 10px 10px;
+  }
+
+  .team .team-item:hover .team-content h4 {
+      color: var(--bs-white) !important;
+  }
+
+  .team .team-item:hover .team-content p {
+      color: var(--bs-dark) !important;
+  }
+  /*** Team End ***/

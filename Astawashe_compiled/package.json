@@ -1,0 +1,11 @@
+{
+  "name": "asta-washe",
+  "version": "1.0.0",
+  "description": "AstaWashe Health System",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:server": "npm --prefix server1 run dev",
+    "start": "npm --prefix server1 start"
+  }
+}
