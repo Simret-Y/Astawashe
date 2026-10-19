@@ -206,7 +206,7 @@ export default function About() {
       >
         <div className="team-item border border-primary img-border-radius overflow-hidden">
           <img
-            src={assetUrl('img/team-2.jpg')}
+            src={assetUrl('img/team-1.jpg')}
             className="img-fluid w-100"
             alt="Kibir Mesganaw"
           />

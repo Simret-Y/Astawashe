@@ -28,7 +28,7 @@ export default function Search() {
       <div className="container-fluid py-5">
         <div className="container">
           <div className="row g-5">
-            {['team-1.jpg', 'team-2.jpg', 'team-3.jpg'].map((img) => (
+            {['team-1.jpg', 'team-1.jpg', 'team-3.jpg'].map((img) => (
               <div className="col-lg-6 team-item" key={img}>
                 <div className="row g-0 bg-light rounded overflow-hidden">
                   <div className="col-12 col-sm-5 h-100">

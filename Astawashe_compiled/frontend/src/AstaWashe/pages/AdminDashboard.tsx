@@ -1,7 +1,16 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import {
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getJson, postJson } from '../lib/api';
-import { isAuthenticated, logout, getCurrentUser } from '../lib/auth';
+import {
+  isAuthenticated,
+  logout,
+  getCurrentUser,
+} from '../lib/auth';
 
 interface SystemOverview {
   overview: {
@@ -16,7 +25,7 @@ interface SystemOverview {
     doctors: number;
     patients: number;
   };
-  revenue: {
+  revenue?: {
     total: number;
   };
 }
@@ -51,22 +60,62 @@ interface PendingDoctor {
 
 interface PendingPatient {
   id: string;
-  fullName: string;
+
+  // Privacy-safe field preferred
+  nickname?: string;
+
+  // Kept only as fallback because older API responses may not
+  // yet return nickname.
+  fullName?: string;
+
   status: string;
+
   user?: {
     email?: string;
     phone?: string;
   };
+
   hospital?: {
     name: string;
   };
+
   assignedDoctor?: {
-    name: string;
+    name?: string;
   };
+
   createdAt: string;
 }
 
-type Tab = 'overview' | 'approvals' | 'hospitals';
+interface Hospital {
+  id: string;
+  name: string;
+  organizationType?: string;
+  licenseNumber?: string;
+  registrationNumber?: string;
+  address?: string;
+  city?: string;
+  region?: string;
+  phone?: string;
+  email?: string;
+  status: string;
+  createdAt?: string;
+
+  _count?: {
+    doctors?: number;
+    patientProfiles?: number;
+    patients?: number;
+    users?: number;
+  };
+
+  doctorCount?: number;
+  patientCount?: number;
+  userCount?: number;
+}
+
+type Tab =
+  | 'overview'
+  | 'approvals'
+  | 'hospitals';
 
 function Icon({
   name,
@@ -229,41 +278,65 @@ function Icon({
         <path d="m13 6 6 6-6 6" />
       </svg>
     ),
-
-    more: (
-      <svg {...common}>
-        <circle cx="5" cy="12" r="1" />
-        <circle cx="12" cy="12" r="1" />
-        <circle cx="19" cy="12" r="1" />
-      </svg>
-    ),
   };
 
-  return <span style={{ display: 'inline-flex' }}>{icons[name] || icons.grid}</span>;
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+      }}
+    >
+      {icons[name] || icons.grid}
+    </span>
+  );
 }
 
 export default function AdminDashboard() {
   const navigate = useNavigate();
   const currentUser = getCurrentUser();
 
-  const [activeTab, setActiveTab] = useState<Tab>('overview');
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [activeTab, setActiveTab] =
+    useState<Tab>('overview');
 
-  const [stats, setStats] = useState<SystemOverview | null>(null);
-  const [pendingHospitals, setPendingHospitals] = useState<PendingHospital[]>([]);
-  const [pendingDoctors, setPendingDoctors] = useState<PendingDoctor[]>([]);
-  const [pendingPatients, setPendingPatients] = useState<PendingPatient[]>([]);
-  const [allHospitals, setAllHospitals] = useState<any[]>([]);
+  const [sidebarOpen, setSidebarOpen] =
+    useState(true);
 
-  const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [stats, setStats] =
+    useState<SystemOverview | null>(null);
 
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [actionSuccess, setActionSuccess] = useState('');
-  const [actionLoading, setActionLoading] = useState(false);
+  const [pendingHospitals, setPendingHospitals] =
+    useState<PendingHospital[]>([]);
 
-  const [showAddHospital, setShowAddHospital] = useState(false);
+  const [pendingDoctors, setPendingDoctors] =
+    useState<PendingDoctor[]>([]);
+
+  const [pendingPatients, setPendingPatients] =
+    useState<PendingPatient[]>([]);
+
+  const [allHospitals, setAllHospitals] =
+    useState<Hospital[]>([]);
+
+  const [searchQuery, setSearchQuery] =
+    useState('');
+
+  const [statusFilter, setStatusFilter] =
+    useState('ALL');
+
+  const [loading, setLoading] =
+    useState(true);
+
+  const [error, setError] =
+    useState('');
+
+  const [actionSuccess, setActionSuccess] =
+    useState('');
+
+  const [actionLoading, setActionLoading] =
+    useState(false);
+
+  const [showAddHospital, setShowAddHospital] =
+    useState(false);
 
   const [newHospital, setNewHospital] = useState({
     name: '',
@@ -306,37 +379,88 @@ export default function AdminDashboard() {
         pendPatRes,
         hospitalsRes,
       ] = await Promise.all([
-        getJson<any>('/dashboards/admin').catch(() => null),
-        getJson<any>('/approvals/admin/hospitals/pending').catch(() => null),
-        getJson<any>('/approvals/admin/doctors/pending').catch(() => null),
-        getJson<any>('/approvals/admin/patients/pending').catch(() => null),
-        getJson<any>('/hospitals').catch(() => null),
+        getJson<any>('/dashboards/admin').catch(
+          () => null
+        ),
+
+        getJson<any>(
+          '/approvals/admin/hospitals/pending'
+        ).catch(() => null),
+
+        getJson<any>(
+          '/approvals/admin/doctors/pending'
+        ).catch(() => null),
+
+        getJson<any>(
+          '/approvals/admin/patients/pending'
+        ).catch(() => null),
+
+        getJson<any>('/hospitals').catch(
+          () => null
+        ),
       ]);
 
-      if (statsRes?.data) setStats(statsRes.data);
-      if (pendHospRes?.data) setPendingHospitals(pendHospRes.data);
-      if (pendDocRes?.data) setPendingDoctors(pendDocRes.data);
-      if (pendPatRes?.data) setPendingPatients(pendPatRes.data);
+      if (statsRes?.data) {
+        setStats(statsRes.data);
+      }
 
-      const rawHospitals = hospitalsRes?.data || hospitalsRes || [];
-      const list = Array.isArray(rawHospitals) ? rawHospitals : [];
+      if (pendHospRes?.data) {
+        setPendingHospitals(
+          Array.isArray(pendHospRes.data)
+            ? pendHospRes.data
+            : []
+        );
+      }
+
+      if (pendDocRes?.data) {
+        setPendingDoctors(
+          Array.isArray(pendDocRes.data)
+            ? pendDocRes.data
+            : []
+        );
+      }
+
+      if (pendPatRes?.data) {
+        setPendingPatients(
+          Array.isArray(pendPatRes.data)
+            ? pendPatRes.data
+            : []
+        );
+      }
+
+      const rawHospitals =
+        hospitalsRes?.data ||
+        hospitalsRes ||
+        [];
+
+      const list: Hospital[] =
+        Array.isArray(rawHospitals)
+          ? rawHospitals
+          : [];
 
       setAllHospitals(list);
 
       if (
-        (!pendHospRes?.data || pendHospRes.data.length === 0) &&
+        (!pendHospRes?.data ||
+          pendHospRes.data.length === 0) &&
         list.length > 0
       ) {
-        const pendingFromList = list.filter(
-          (h: any) => h.status === 'PENDING'
-        );
+        const pendingFromList =
+          list.filter(
+            (h) => h.status === 'PENDING'
+          );
 
         if (pendingFromList.length > 0) {
-          setPendingHospitals(pendingFromList);
+          setPendingHospitals(
+            pendingFromList as PendingHospital[]
+          );
         }
       }
     } catch (err) {
-      setError((err as Error).message);
+      setError(
+        (err as Error).message ||
+          'Failed to load administrator data.'
+      );
     } finally {
       setLoading(false);
     }
@@ -351,10 +475,13 @@ export default function AdminDashboard() {
       setError('');
       setActionSuccess('');
 
-      await postJson(`/approvals/admin/hospitals/${hospitalId}/approve`, {
-        action,
-        reason: `System Admin ${action.toLowerCase()}d`,
-      });
+      await postJson(
+        `/approvals/admin/hospitals/${hospitalId}/approve`,
+        {
+          action,
+          reason: `System Admin ${action.toLowerCase()}d`,
+        }
+      );
 
       setActionSuccess(
         `Hospital ${action.toLowerCase()}d successfully.`
@@ -377,10 +504,13 @@ export default function AdminDashboard() {
       setError('');
       setActionSuccess('');
 
-      await postJson(`/approvals/admin/doctors/${doctorId}/approve`, {
-        action,
-        reason: `System Admin ${action.toLowerCase()}d`,
-      });
+      await postJson(
+        `/approvals/admin/doctors/${doctorId}/approve`,
+        {
+          action,
+          reason: `System Admin ${action.toLowerCase()}d`,
+        }
+      );
 
       setActionSuccess(
         `Doctor ${action.toLowerCase()}d successfully.`
@@ -403,13 +533,16 @@ export default function AdminDashboard() {
       setError('');
       setActionSuccess('');
 
-      await postJson(`/approvals/admin/patients/${patientId}/approve`, {
-        action,
-        reason: `System Admin ${action.toLowerCase()}d`,
-      });
+      await postJson(
+        `/approvals/admin/patients/${patientId}/approve`,
+        {
+          action,
+          reason: `System Admin ${action.toLowerCase()}d`,
+        }
+      );
 
       setActionSuccess(
-        `Patient ${action.toLowerCase()}d successfully.`
+        `Patient registration ${action.toLowerCase()}d successfully.`
       );
 
       await loadAdminData();
@@ -420,18 +553,27 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleCreateHospital = async (e: React.FormEvent) => {
+  const handleCreateHospital = async (
+    e: React.FormEvent
+  ) => {
     e.preventDefault();
 
-    if (!newHospital.name.trim()) return;
+    if (!newHospital.name.trim()) {
+      return;
+    }
 
     try {
       setActionLoading(true);
       setError('');
 
-      await postJson('/hospitals', newHospital);
+      await postJson(
+        '/hospitals',
+        newHospital
+      );
 
-      setActionSuccess('New hospital created successfully.');
+      setActionSuccess(
+        'New hospital created successfully.'
+      );
 
       setShowAddHospital(false);
 
@@ -460,20 +602,119 @@ export default function AdminDashboard() {
     navigate('/auth');
   };
 
-  const filteredHospitals = useMemo(() => {
-    return allHospitals.filter((h) => {
-      const search = searchQuery.toLowerCase();
+  /*
+   * ============================================================
+   * PRIVACY
+   * ============================================================
+   */
 
-      const matchesSearch =
-        h.name?.toLowerCase().includes(search) ||
-        h.city?.toLowerCase().includes(search);
+  const getPatientDisplayName = (
+    patient: PendingPatient
+  ) => {
+    if (patient.nickname?.trim()) {
+      return patient.nickname.trim();
+    }
 
-      const matchesStatus =
-        statusFilter === 'ALL' || h.status === statusFilter;
+    return 'Private Patient';
+  };
 
-      return matchesSearch && matchesStatus;
-    });
-  }, [allHospitals, searchQuery, statusFilter]);
+  /*
+   * ============================================================
+   * HOSPITAL USER COUNTS
+   * ============================================================
+   *
+   * Preferred backend response:
+   *
+   * _count: {
+   *   doctors: number,
+   *   patientProfiles: number
+   * }
+   *
+   * We also support alternative field names so the UI
+   * remains compatible with slightly different API responses.
+   */
+
+  const getDoctorCount = (
+    hospital: Hospital
+  ) => {
+    return (
+      hospital._count?.doctors ??
+      hospital.doctorCount ??
+      0
+    );
+  };
+
+  const getPatientCount = (
+    hospital: Hospital
+  ) => {
+    return (
+      hospital._count?.patientProfiles ??
+      hospital._count?.patients ??
+      hospital.patientCount ??
+      0
+    );
+  };
+
+  const getUserCount = (
+    hospital: Hospital
+  ) => {
+    if (
+      typeof hospital.userCount ===
+      'number'
+    ) {
+      return hospital.userCount;
+    }
+
+    if (
+      typeof hospital._count?.users ===
+      'number'
+    ) {
+      return hospital._count.users;
+    }
+
+    return (
+      getDoctorCount(hospital) +
+      getPatientCount(hospital)
+    );
+  };
+
+  const filteredHospitals =
+    useMemo(() => {
+      const search =
+        searchQuery
+          .trim()
+          .toLowerCase();
+
+      return allHospitals.filter(
+        (hospital) => {
+          const matchesSearch =
+            !search ||
+            hospital.name
+              ?.toLowerCase()
+              .includes(search) ||
+            hospital.city
+              ?.toLowerCase()
+              .includes(search) ||
+            hospital.region
+              ?.toLowerCase()
+              .includes(search);
+
+          const matchesStatus =
+            statusFilter === 'ALL' ||
+            hospital.status ===
+              statusFilter;
+
+          return (
+            matchesSearch &&
+            matchesStatus
+          );
+        }
+      );
+    }, [
+      allHospitals,
+      searchQuery,
+      statusFilter,
+    ]);
 
   const totalPending =
     pendingHospitals.length +
@@ -481,38 +722,67 @@ export default function AdminDashboard() {
     pendingPatients.length;
 
   const totalActive =
-    (stats?.overview?.activeHospitals || 0) +
-    (stats?.overview?.activeDoctors || 0) +
-    (stats?.overview?.activePatients || 0);
+    (stats?.overview
+      ?.activeHospitals || 0) +
+    (stats?.overview
+      ?.activeDoctors || 0) +
+    (stats?.overview
+      ?.activePatients || 0);
+
+  const totalHospitalUsers =
+    allHospitals.reduce(
+      (total, hospital) =>
+        total + getUserCount(hospital),
+      0
+    );
 
   const statCards = [
     {
       label: 'Registered Users',
-      value: stats?.overview?.totalUsers || 0,
-      description: 'Total accounts on AstaWashe',
+      value:
+        stats?.overview
+          ?.totalUsers || 0,
+      description:
+        'Total accounts on AstaWashe',
       icon: 'users',
-      className: 'blue',
+      bg: '#edf3ff',
+      color: '#4777dd',
     },
+
     {
       label: 'Approved Hospitals',
-      value: stats?.overview?.activeHospitals || 0,
-      description: 'Verified healthcare facilities',
+      value:
+        stats?.overview
+          ?.activeHospitals || 0,
+      description:
+        'Verified healthcare facilities',
       icon: 'hospital',
-      className: 'green',
+      bg: '#eaf8f1',
+      color: '#2caa72',
     },
+
     {
       label: 'Active Doctors',
-      value: stats?.overview?.activeDoctors || 0,
-      description: 'Healthcare professionals',
+      value:
+        stats?.overview
+          ?.activeDoctors || 0,
+      description:
+        'Healthcare professionals',
       icon: 'doctor',
-      className: 'purple',
+      bg: '#f2efff',
+      color: '#8067d8',
     },
+
     {
       label: 'Active Patients',
-      value: stats?.overview?.activePatients || 0,
-      description: 'Patients linked to care',
+      value:
+        stats?.overview
+          ?.activePatients || 0,
+      description:
+        'Patients connected to care',
       icon: 'patient',
-      className: 'orange',
+      bg: '#fff3e9',
+      color: '#ed8a45',
     },
   ];
 
@@ -531,13 +801,20 @@ export default function AdminDashboard() {
           <div
             className="spinner-border text-primary"
             role="status"
-            style={{ width: 40, height: 40 }}
-          >
-            <span className="visually-hidden">Loading...</span>
-          </div>
+            style={{
+              width: 42,
+              height: 42,
+            }}
+          />
 
-          <p className="mt-3 text-muted mb-0">
-            Loading AstaWashe administration...
+          <p
+            className="mt-3 text-muted mb-0"
+            style={{
+              fontSize: 13,
+            }}
+          >
+            Loading AstaWashe
+            administration...
           </p>
         </div>
       </div>
@@ -552,7 +829,9 @@ export default function AdminDashboard() {
         color: '#263246',
       }}
     >
-      {/* ================= SIDEBAR ================= */}
+      {/* =====================================================
+          SIDEBAR
+      ===================================================== */}
 
       <aside
         style={{
@@ -560,40 +839,50 @@ export default function AdminDashboard() {
           top: 0,
           left: 0,
           bottom: 0,
-          width: sidebarOpen ? 245 : 72,
+          width: sidebarOpen
+            ? 245
+            : 72,
           background: '#182235',
           color: '#fff',
           zIndex: 1050,
-          transition: 'width .25s ease',
+          transition:
+            'width .25s ease',
           overflow: 'hidden',
-          boxShadow: '3px 0 15px rgba(20,30,50,.08)',
+          boxShadow:
+            '3px 0 15px rgba(20,30,50,.08)',
         }}
       >
-        {/* Brand */}
-
         <div
           style={{
             height: 68,
             display: 'flex',
             alignItems: 'center',
-            padding: '0 20px',
-            borderBottom: '1px solid rgba(255,255,255,.07)',
+            padding:
+              '0 20px',
+            borderBottom:
+              '1px solid rgba(255,255,255,.07)',
             gap: 11,
           }}
         >
           <div
             style={{
-              width: 34,
-              height: 34,
+              width: 35,
+              height: 35,
               borderRadius: 9,
-              background: '#356fe5',
+              background:
+                '#356fe5',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
+              alignItems:
+                'center',
+              justifyContent:
+                'center',
               flexShrink: 0,
             }}
           >
-            <Icon name="shield" size={19} />
+            <Icon
+              name="shield"
+              size={19}
+            />
           </div>
 
           {sidebarOpen && (
@@ -602,7 +891,6 @@ export default function AdminDashboard() {
                 style={{
                   fontWeight: 700,
                   fontSize: 17,
-                  letterSpacing: '-.2px',
                 }}
               >
                 AstaWashe
@@ -612,9 +900,10 @@ export default function AdminDashboard() {
                 style={{
                   fontSize: 10,
                   color: '#8f9bb0',
-                  marginTop: -1,
-                  textTransform: 'uppercase',
-                  letterSpacing: '.7px',
+                  textTransform:
+                    'uppercase',
+                  letterSpacing:
+                    '.7px',
                 }}
               >
                 Administration
@@ -623,18 +912,24 @@ export default function AdminDashboard() {
           )}
         </div>
 
-        {/* Navigation */}
-
-        <div style={{ padding: '22px 12px' }}>
+        <div
+          style={{
+            padding:
+              '22px 12px',
+          }}
+        >
           {sidebarOpen && (
             <div
               style={{
                 color: '#68768e',
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                padding: '0 12px 9px',
+                letterSpacing:
+                  '1px',
+                textTransform:
+                  'uppercase',
+                padding:
+                  '0 12px 9px',
               }}
             >
               Main Menu
@@ -642,103 +937,174 @@ export default function AdminDashboard() {
           )}
 
           <button
-            onClick={() => setActiveTab('overview')}
+            onClick={() =>
+              setActiveTab(
+                'overview'
+              )
+            }
             className="border-0 w-100 text-start"
             style={{
               height: 43,
               borderRadius: 7,
               display: 'flex',
-              alignItems: 'center',
+              alignItems:
+                'center',
               gap: 13,
-              padding: '0 13px',
-              color: activeTab === 'overview' ? '#fff' : '#9da9bc',
+              padding:
+                '0 13px',
+              color:
+                activeTab ===
+                'overview'
+                  ? '#fff'
+                  : '#9da9bc',
               background:
-                activeTab === 'overview'
+                activeTab ===
+                'overview'
                   ? 'rgba(61,111,229,.28)'
                   : 'transparent',
-              fontWeight: activeTab === 'overview' ? 600 : 400,
+              fontWeight:
+                activeTab ===
+                'overview'
+                  ? 600
+                  : 400,
               marginBottom: 4,
             }}
           >
-            <Icon name="grid" size={18} />
-            {sidebarOpen && <span>Dashboard</span>}
-          </button>
+            <Icon
+              name="grid"
+              size={18}
+            />
 
-          <button
-            onClick={() => setActiveTab('approvals')}
-            className="border-0 w-100 text-start"
-            style={{
-              height: 43,
-              borderRadius: 7,
-              display: 'flex',
-              alignItems: 'center',
-              gap: 13,
-              padding: '0 13px',
-              color: activeTab === 'approvals' ? '#fff' : '#9da9bc',
-              background:
-                activeTab === 'approvals'
-                  ? 'rgba(61,111,229,.28)'
-                  : 'transparent',
-              marginBottom: 4,
-              position: 'relative',
-            }}
-          >
-            <Icon name="clock" size={18} />
-
-            {sidebarOpen && <span>Approvals</span>}
-
-            {totalPending > 0 && (
-              <span
-                style={{
-                  marginLeft: 'auto',
-                  background: '#e64f61',
-                  color: '#fff',
-                  fontSize: 10,
-                  fontWeight: 700,
-                  minWidth: 20,
-                  height: 20,
-                  borderRadius: 10,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                }}
-              >
-                {totalPending}
+            {sidebarOpen && (
+              <span>
+                Dashboard
               </span>
             )}
           </button>
 
           <button
-            onClick={() => setActiveTab('hospitals')}
+            onClick={() =>
+              setActiveTab(
+                'approvals'
+              )
+            }
             className="border-0 w-100 text-start"
             style={{
               height: 43,
               borderRadius: 7,
               display: 'flex',
-              alignItems: 'center',
+              alignItems:
+                'center',
               gap: 13,
-              padding: '0 13px',
-              color: activeTab === 'hospitals' ? '#fff' : '#9da9bc',
+              padding:
+                '0 13px',
+              color:
+                activeTab ===
+                'approvals'
+                  ? '#fff'
+                  : '#9da9bc',
               background:
-                activeTab === 'hospitals'
+                activeTab ===
+                'approvals'
                   ? 'rgba(61,111,229,.28)'
                   : 'transparent',
               marginBottom: 4,
             }}
           >
-            <Icon name="hospital" size={18} />
+            <Icon
+              name="clock"
+              size={18}
+            />
 
             {sidebarOpen && (
               <>
-                <span>Hospitals</span>
+                <span>
+                  Approvals
+                </span>
+
+                {totalPending >
+                  0 && (
+                  <span
+                    style={{
+                      marginLeft:
+                        'auto',
+                      background:
+                        '#e64f61',
+                      color:
+                        '#fff',
+                      fontSize: 10,
+                      fontWeight: 700,
+                      minWidth: 20,
+                      height: 20,
+                      borderRadius:
+                        10,
+                      display:
+                        'flex',
+                      alignItems:
+                        'center',
+                      justifyContent:
+                        'center',
+                    }}
+                  >
+                    {totalPending}
+                  </span>
+                )}
+              </>
+            )}
+          </button>
+
+          <button
+            onClick={() =>
+              setActiveTab(
+                'hospitals'
+              )
+            }
+            className="border-0 w-100 text-start"
+            style={{
+              height: 43,
+              borderRadius: 7,
+              display: 'flex',
+              alignItems:
+                'center',
+              gap: 13,
+              padding:
+                '0 13px',
+              color:
+                activeTab ===
+                'hospitals'
+                  ? '#fff'
+                  : '#9da9bc',
+              background:
+                activeTab ===
+                'hospitals'
+                  ? 'rgba(61,111,229,.28)'
+                  : 'transparent',
+              marginBottom: 4,
+            }}
+          >
+            <Icon
+              name="hospital"
+              size={18}
+            />
+
+            {sidebarOpen && (
+              <>
+                <span>
+                  Hospitals
+                </span>
+
                 <span
                   style={{
-                    marginLeft: 'auto',
+                    marginLeft:
+                      'auto',
                     fontSize: 11,
-                    color: '#758299',
+                    color:
+                      '#758299',
                   }}
                 >
-                  {allHospitals.length}
+                  {
+                    allHospitals.length
+                  }
                 </span>
               </>
             )}
@@ -746,8 +1112,10 @@ export default function AdminDashboard() {
 
           <div
             style={{
-              borderTop: '1px solid rgba(255,255,255,.06)',
-              margin: '18px 7px',
+              borderTop:
+                '1px solid rgba(255,255,255,.06)',
+              margin:
+                '18px 7px',
             }}
           />
 
@@ -757,91 +1125,131 @@ export default function AdminDashboard() {
                 color: '#68768e',
                 fontSize: 10,
                 fontWeight: 700,
-                letterSpacing: '1px',
-                textTransform: 'uppercase',
-                padding: '0 12px 9px',
+                letterSpacing:
+                  '1px',
+                textTransform:
+                  'uppercase',
+                padding:
+                  '0 12px 9px',
               }}
             >
               System
             </div>
           )}
 
-          <button
-            className="border-0 w-100 text-start"
+          <div
             style={{
               height: 43,
               borderRadius: 7,
               display: 'flex',
-              alignItems: 'center',
+              alignItems:
+                'center',
               gap: 13,
-              padding: '0 13px',
-              color: '#9da9bc',
-              background: 'transparent',
-              marginBottom: 4,
+              padding:
+                '0 13px',
+              color:
+                '#9da9bc',
             }}
           >
-            <Icon name="activity" size={18} />
-            {sidebarOpen && <span>System Activity</span>}
-          </button>
+            <Icon
+              name="activity"
+              size={18}
+            />
 
-          <button
-            className="border-0 w-100 text-start"
+            {sidebarOpen && (
+              <span>
+                System Activity
+              </span>
+            )}
+          </div>
+
+          <div
             style={{
               height: 43,
               borderRadius: 7,
               display: 'flex',
-              alignItems: 'center',
+              alignItems:
+                'center',
               gap: 13,
-              padding: '0 13px',
-              color: '#9da9bc',
-              background: 'transparent',
-              marginBottom: 4,
+              padding:
+                '0 13px',
+              color:
+                '#9da9bc',
             }}
           >
-            <Icon name="settings" size={18} />
-            {sidebarOpen && <span>System Settings</span>}
-          </button>
+            <Icon
+              name="settings"
+              size={18}
+            />
+
+            {sidebarOpen && (
+              <span>
+                System Settings
+              </span>
+            )}
+          </div>
         </div>
-
-        {/* Sidebar footer */}
 
         <div
           style={{
-            position: 'absolute',
+            position:
+              'absolute',
             bottom: 0,
             left: 0,
             right: 0,
-            borderTop: '1px solid rgba(255,255,255,.07)',
-            padding: '14px',
+            borderTop:
+              '1px solid rgba(255,255,255,.07)',
+            padding: 14,
           }}
         >
           <button
-            onClick={handleLogout}
+            onClick={
+              handleLogout
+            }
             className="border-0 w-100"
             style={{
               height: 40,
-              background: 'transparent',
-              color: '#9da9bc',
+              background:
+                'transparent',
+              color:
+                '#9da9bc',
               display: 'flex',
-              alignItems: 'center',
+              alignItems:
+                'center',
               gap: 13,
-              padding: '0 10px',
+              padding:
+                '0 10px',
               borderRadius: 7,
             }}
           >
-            <Icon name="logout" size={17} />
-            {sidebarOpen && <span>Sign out</span>}
+            <Icon
+              name="logout"
+              size={17}
+            />
+
+            {sidebarOpen && (
+              <span>
+                Sign out
+              </span>
+            )}
           </button>
         </div>
       </aside>
 
-      {/* ================= MAIN ================= */}
+      {/* =====================================================
+          MAIN CONTENT
+      ===================================================== */}
 
       <main
         style={{
-          marginLeft: sidebarOpen ? 245 : 72,
-          transition: 'margin-left .25s ease',
-          minHeight: '100vh',
+          marginLeft:
+            sidebarOpen
+              ? 245
+              : 72,
+          transition:
+            'margin-left .25s ease',
+          minHeight:
+            '100vh',
         }}
       >
         {/* TOP BAR */}
@@ -850,69 +1258,109 @@ export default function AdminDashboard() {
           style={{
             height: 68,
             background: '#fff',
-            borderBottom: '1px solid #e8ebf1',
+            borderBottom:
+              '1px solid #e8ebf1',
             display: 'flex',
-            alignItems: 'center',
-            padding: '0 28px',
+            alignItems:
+              'center',
+            padding:
+              '0 28px',
             gap: 22,
           }}
         >
           <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
+            onClick={() =>
+              setSidebarOpen(
+                !sidebarOpen
+              )
+            }
             className="btn border-0 p-0 text-secondary"
           >
-            <Icon name="menu" size={21} />
+            <Icon
+              name="menu"
+              size={21}
+            />
           </button>
-
-          {/* Search */}
 
           <div
             style={{
               width: 330,
               height: 37,
-              border: '1px solid #e3e7ee',
+              border:
+                '1px solid #e3e7ee',
               borderRadius: 7,
               display: 'flex',
-              alignItems: 'center',
-              padding: '0 12px',
-              color: '#9aa4b5',
+              alignItems:
+                'center',
+              padding:
+                '0 12px',
+              color:
+                '#9aa4b5',
             }}
           >
-            <Icon name="search" size={17} />
+            <Icon
+              name="search"
+              size={17}
+            />
 
             <input
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={
+                searchQuery
+              }
+              onChange={(e) =>
+                setSearchQuery(
+                  e.target.value
+                )
+              }
               placeholder="Search hospitals..."
               style={{
                 border: 0,
                 outline: 0,
-                width: '100%',
+                width:
+                  '100%',
                 marginLeft: 9,
                 fontSize: 13,
-                color: '#374151',
               }}
             />
           </div>
 
-          <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 18 }}>
+          <div
+            style={{
+              marginLeft:
+                'auto',
+              display: 'flex',
+              alignItems:
+                'center',
+              gap: 18,
+            }}
+          >
             <button
               className="btn border-0 p-0 text-secondary position-relative"
-              onClick={() => setActiveTab('approvals')}
+              onClick={() =>
+                setActiveTab(
+                  'approvals'
+                )
+              }
             >
-              <Icon name="bell" size={19} />
+              <Icon
+                name="bell"
+                size={19}
+              />
 
-              {totalPending > 0 && (
+              {totalPending >
+                0 && (
                 <span
                   style={{
-                    position: 'absolute',
+                    position:
+                      'absolute',
                     top: -3,
                     right: -4,
                     width: 7,
                     height: 7,
-                    borderRadius: '50%',
-                    background: '#e54f61',
-                    border: '1px solid #fff',
+                    borderRadius:
+                      '50%',
+                    background:
+                      '#e54f61',
                   }}
                 />
               )}
@@ -922,14 +1370,16 @@ export default function AdminDashboard() {
               style={{
                 width: 1,
                 height: 25,
-                background: '#e7eaf0',
+                background:
+                  '#e7eaf0',
               }}
             />
 
             <div
               style={{
                 display: 'flex',
-                alignItems: 'center',
+                alignItems:
+                  'center',
                 gap: 10,
               }}
             >
@@ -937,12 +1387,18 @@ export default function AdminDashboard() {
                 style={{
                   width: 35,
                   height: 35,
-                  borderRadius: '50%',
-                  background: '#e8eefc',
-                  color: '#356fe5',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
+                  borderRadius:
+                    '50%',
+                  background:
+                    '#e8eefc',
+                  color:
+                    '#356fe5',
+                  display:
+                    'flex',
+                  alignItems:
+                    'center',
+                  justifyContent:
+                    'center',
                   fontWeight: 700,
                   fontSize: 13,
                 }}
@@ -955,50 +1411,73 @@ export default function AdminDashboard() {
                   style={{
                     fontSize: 12,
                     fontWeight: 700,
-                    color: '#293449',
                   }}
                 >
-                  System Administrator
+                  System
+                  Administrator
                 </div>
 
                 <div
                   style={{
                     fontSize: 10,
-                    color: '#8a95a7',
+                    color:
+                      '#8a95a7',
                   }}
                 >
-                  {currentUser?.email || 'astawashe@insa.edu.et'}
+                  {currentUser?.email ||
+                    'Administrator'}
                 </div>
               </div>
             </div>
           </div>
         </header>
 
-        {/* CONTENT */}
-
-        <div style={{ padding: '28px 30px' }}>
-          {/* Alerts */}
+        <div
+          style={{
+            padding:
+              '28px 30px',
+          }}
+        >
+          {/* ALERTS */}
 
           {error && (
             <div className="alert alert-danger d-flex align-items-center rounded-3 mb-4">
-              <Icon name="x" size={18} />
-              <span className="ms-2">{error}</span>
+              <Icon
+                name="x"
+                size={18}
+              />
+
+              <span className="ms-2">
+                {error}
+              </span>
 
               <button
                 className="btn-close ms-auto"
-                onClick={() => setError('')}
+                onClick={() =>
+                  setError('')
+                }
               />
             </div>
           )}
 
           {actionSuccess && (
             <div className="alert alert-success d-flex align-items-center rounded-3 mb-4">
-              <Icon name="check" size={18} />
-              <span className="ms-2">{actionSuccess}</span>
+              <Icon
+                name="check"
+                size={18}
+              />
+
+              <span className="ms-2">
+                {actionSuccess}
+              </span>
 
               <button
                 className="btn-close ms-auto"
-                onClick={() => setActionSuccess('')}
+                onClick={() =>
+                  setActionSuccess(
+                    ''
+                  )
+                }
               />
             </div>
           )}
@@ -1007,7 +1486,9 @@ export default function AdminDashboard() {
 
           <div
             className="d-flex flex-wrap align-items-center justify-content-between gap-3"
-            style={{ marginBottom: 25 }}
+            style={{
+              marginBottom: 25,
+            }}
           >
             <div>
               <h2
@@ -1015,8 +1496,8 @@ export default function AdminDashboard() {
                   fontSize: 25,
                   fontWeight: 700,
                   marginBottom: 5,
-                  color: '#263246',
-                  letterSpacing: '-.5px',
+                  letterSpacing:
+                    '-.5px',
                 }}
               >
                 System Overview
@@ -1025,890 +1506,569 @@ export default function AdminDashboard() {
               <p
                 style={{
                   margin: 0,
-                  color: '#8b95a7',
+                  color:
+                    '#8b95a7',
                   fontSize: 13,
                 }}
               >
-                Monitor AstaWashe healthcare operations and registration activity.
+                Monitor the
+                AstaWashe
+                healthcare
+                network,
+                users and
+                registration
+                activity.
               </p>
             </div>
 
             <div className="d-flex gap-2">
               <button
                 className="btn btn-light border"
-                onClick={loadAdminData}
+                onClick={
+                  loadAdminData
+                }
                 style={{
-                  height: 38,
                   fontSize: 12,
                   fontWeight: 600,
                 }}
               >
-                <Icon name="refresh" size={15} />
-                <span className="ms-2">Refresh</span>
+                <Icon
+                  name="refresh"
+                  size={15}
+                />
+
+                <span className="ms-2">
+                  Refresh
+                </span>
               </button>
 
               <button
                 className="btn btn-primary"
                 onClick={() => {
-                  setActiveTab('hospitals');
-                  setShowAddHospital(true);
+                  setActiveTab(
+                    'hospitals'
+                  );
+                  setShowAddHospital(
+                    true
+                  );
                 }}
                 style={{
-                  height: 38,
                   fontSize: 12,
                   fontWeight: 600,
                 }}
               >
-                <Icon name="plus" size={15} />
-                <span className="ms-2">Add Hospital</span>
+                <Icon
+                  name="plus"
+                  size={15}
+                />
+
+                <span className="ms-2">
+                  Add Hospital
+                </span>
               </button>
             </div>
           </div>
 
-          {/* ================= OVERVIEW ================= */}
+          {/* =====================================================
+              OVERVIEW
+          ===================================================== */}
 
-          {activeTab === 'overview' && (
+          {activeTab ===
+            'overview' && (
             <>
-              {/* KPI CARDS */}
-
               <div className="row g-3 mb-4">
-                {statCards.map((card) => (
-                  <div
-                    className="col-12 col-sm-6 col-xl-3"
-                    key={card.label}
-                  >
+                {statCards.map(
+                  (card) => (
                     <div
-                      style={{
-                        background: '#fff',
-                        border: '1px solid #e8ebf1',
-                        borderRadius: 9,
-                        padding: '20px',
-                        minHeight: 145,
-                        boxShadow: '0 2px 5px rgba(25,40,70,.025)',
-                      }}
+                      className="col-12 col-sm-6 col-xl-3"
+                      key={
+                        card.label
+                      }
                     >
                       <div
-                        className="d-flex justify-content-between align-items-start"
-                      >
-                        <div>
-                          <div
-                            style={{
-                              color: '#8a94a6',
-                              fontSize: 11,
-                              fontWeight: 700,
-                              textTransform: 'uppercase',
-                              letterSpacing: '.45px',
-                            }}
-                          >
-                            {card.label}
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 30,
-                              lineHeight: 1.2,
-                              fontWeight: 700,
-                              marginTop: 10,
-                              color: '#273348',
-                            }}
-                          >
-                            {card.value.toLocaleString()}
-                          </div>
-                        </div>
-
-                        <div
-                          style={{
-                            width: 42,
-                            height: 42,
-                            borderRadius: 8,
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background:
-                              card.className === 'blue'
-                                ? '#edf3ff'
-                                : card.className === 'green'
-                                ? '#eaf8f1'
-                                : card.className === 'purple'
-                                ? '#f2efff'
-                                : '#fff3e9',
-                            color:
-                              card.className === 'blue'
-                                ? '#4777dd'
-                                : card.className === 'green'
-                                ? '#2caa72'
-                                : card.className === 'purple'
-                                ? '#8067d8'
-                                : '#ed8a45',
-                          }}
-                        >
-                          <Icon name={card.icon} size={21} />
-                        </div>
-                      </div>
-
-                      <div
                         style={{
-                          marginTop: 14,
-                          fontSize: 11,
-                          color: '#9aa3b2',
+                          background:
+                            '#fff',
+                          border:
+                            '1px solid #e8ebf1',
+                          borderRadius: 9,
+                          padding: 20,
+                          minHeight: 145,
+                          boxShadow:
+                            '0 2px 5px rgba(25,40,70,.025)',
                         }}
                       >
-                        {card.description}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* MAIN GRID */}
-
-              <div className="row g-3">
-                {/* Pending requests */}
-
-                <div className="col-xl-8">
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e8ebf1',
-                      borderRadius: 9,
-                      height: '100%',
-                    }}
-                  >
-                    <div
-                      className="d-flex justify-content-between align-items-center"
-                      style={{
-                        padding: '18px 20px',
-                        borderBottom: '1px solid #edf0f4',
-                      }}
-                    >
-                      <div>
-                        <h5
-                          style={{
-                            fontSize: 15,
-                            fontWeight: 700,
-                            margin: 0,
-                          }}
-                        >
-                          Registration Requests
-                        </h5>
-
-                        <div
-                          style={{
-                            color: '#9aa3b2',
-                            fontSize: 11,
-                            marginTop: 4,
-                          }}
-                        >
-                          Applications requiring administrative review
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => setActiveTab('approvals')}
-                        className="btn btn-sm btn-light border"
-                        style={{
-                          fontSize: 11,
-                          fontWeight: 600,
-                        }}
-                      >
-                        View all
-                        <span className="ms-1">
-                          <Icon name="arrow" size={13} />
-                        </span>
-                      </button>
-                    </div>
-
-                    <div style={{ padding: 10 }}>
-                      {[
-                        {
-                          title: 'Hospital registrations',
-                          count: pendingHospitals.length,
-                          icon: 'hospital',
-                          description:
-                            'Healthcare facilities awaiting verification',
-                        },
-                        {
-                          title: 'Doctor registrations',
-                          count: pendingDoctors.length,
-                          icon: 'doctor',
-                          description:
-                            'Doctors waiting for account approval',
-                        },
-                        {
-                          title: 'Patient registrations',
-                          count: pendingPatients.length,
-                          icon: 'patient',
-                          description:
-                            'Patients waiting for care assignment',
-                        },
-                      ].map((item) => (
-                        <button
-                          key={item.title}
-                          onClick={() => setActiveTab('approvals')}
-                          className="w-100 border-0 text-start"
-                          style={{
-                            background: '#fff',
-                            display: 'flex',
-                            alignItems: 'center',
-                            padding: '14px 12px',
-                            borderRadius: 7,
-                            cursor: 'pointer',
-                          }}
-                        >
-                          <div
-                            style={{
-                              width: 38,
-                              height: 38,
-                              borderRadius: 8,
-                              background: '#f0f4fb',
-                              color: '#5274a8',
-                              display: 'flex',
-                              alignItems: 'center',
-                              justifyContent: 'center',
-                            }}
-                          >
-                            <Icon name={item.icon} size={19} />
-                          </div>
-
-                          <div className="ms-3">
+                        <div className="d-flex justify-content-between align-items-start">
+                          <div>
                             <div
                               style={{
-                                fontSize: 13,
-                                fontWeight: 650,
-                                color: '#354052',
-                              }}
-                            >
-                              {item.title}
-                            </div>
-
-                            <div
-                              style={{
-                                fontSize: 11,
-                                color: '#9aa3b2',
-                                marginTop: 2,
-                              }}
-                            >
-                              {item.description}
-                            </div>
-                          </div>
-
-                          <div
-                            style={{
-                              marginLeft: 'auto',
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 10,
-                            }}
-                          >
-                            <span
-                              style={{
-                                minWidth: 30,
-                                height: 27,
-                                padding: '0 8px',
-                                borderRadius: 6,
-                                background:
-                                  item.count > 0
-                                    ? '#fff1df'
-                                    : '#f2f4f7',
                                 color:
-                                  item.count > 0
-                                    ? '#d98222'
-                                    : '#8d97a6',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                fontSize: 12,
+                                  '#8a94a6',
+                                fontSize: 11,
                                 fontWeight: 700,
+                                textTransform:
+                                  'uppercase',
+                                letterSpacing:
+                                  '.45px',
                               }}
                             >
-                              {item.count}
-                            </span>
+                              {
+                                card.label
+                              }
+                            </div>
 
+                            <div
+                              style={{
+                                fontSize: 30,
+                                fontWeight: 700,
+                                marginTop: 10,
+                              }}
+                            >
+                              {card.value.toLocaleString()}
+                            </div>
+                          </div>
+
+                          <div
+                            style={{
+                              width: 42,
+                              height: 42,
+                              borderRadius: 8,
+                              display:
+                                'flex',
+                              alignItems:
+                                'center',
+                              justifyContent:
+                                'center',
+                              background:
+                                card.bg,
+                              color:
+                                card.color,
+                            }}
+                          >
                             <Icon
-                              name="arrow"
-                              size={15}
+                              name={
+                                card.icon
+                              }
+                              size={
+                                21
+                              }
                             />
                           </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
+                        </div>
 
-                {/* System health */}
-
-                <div className="col-xl-4">
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e8ebf1',
-                      borderRadius: 9,
-                      height: '100%',
-                    }}
-                  >
-                    <div
-                      style={{
-                        padding: '18px 20px',
-                        borderBottom: '1px solid #edf0f4',
-                      }}
-                    >
-                      <h5
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          margin: 0,
-                        }}
-                      >
-                        System Snapshot
-                      </h5>
-
-                      <div
-                        style={{
-                          color: '#9aa3b2',
-                          fontSize: 11,
-                          marginTop: 4,
-                        }}
-                      >
-                        Current platform activity
-                      </div>
-                    </div>
-
-                    <div style={{ padding: '18px 20px' }}>
-                      <div className="d-flex justify-content-between mb-2">
-                        <span
-                          style={{
-                            fontSize: 12,
-                            color: '#697386',
-                          }}
-                        >
-                          Active care network
-                        </span>
-
-                        <strong style={{ fontSize: 12 }}>
-                          {totalActive}
-                        </strong>
-                      </div>
-
-                      <div
-                        style={{
-                          height: 7,
-                          background: '#edf0f4',
-                          borderRadius: 10,
-                          overflow: 'hidden',
-                        }}
-                      >
                         <div
                           style={{
-                            width:
-                              stats?.overview?.totalUsers
-                                ? `${Math.min(
-                                    100,
-                                    (totalActive /
-                                      stats.overview.totalUsers) *
-                                      100
-                                  )}%`
-                                : '0%',
-                            height: '100%',
-                            background: '#4d79dc',
-                            borderRadius: 10,
+                            marginTop: 14,
+                            fontSize: 11,
+                            color:
+                              '#9aa3b2',
                           }}
+                        >
+                          {
+                            card.description
+                          }
+                        </div>
+                      </div>
+                    </div>
+                  )
+                )}
+              </div>
+
+              {/* NETWORK SUMMARY */}
+
+              <div className="row g-3 mb-4">
+                <div className="col-md-4">
+                  <div
+                    className="bg-white border rounded-3 p-4 h-100"
+                  >
+                    <div className="d-flex align-items-center gap-3">
+                      <div
+                        style={{
+                          width: 45,
+                          height: 45,
+                          borderRadius: 10,
+                          background:
+                            '#edf3ff',
+                          color:
+                            '#4777dd',
+                          display:
+                            'flex',
+                          alignItems:
+                            'center',
+                          justifyContent:
+                            'center',
+                        }}
+                      >
+                        <Icon
+                          name="hospital"
+                          size={22}
                         />
                       </div>
 
-                      <div className="mt-4">
-                        <div
-                          className="d-flex justify-content-between align-items-center py-3"
-                          style={{
-                            borderBottom: '1px solid #f0f2f5',
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: '#697386',
-                            }}
-                          >
-                            Hospitals
-                          </span>
-
-                          <strong style={{ fontSize: 13 }}>
-                            {stats?.overview?.activeHospitals || 0}
-                          </strong>
-                        </div>
-
-                        <div
-                          className="d-flex justify-content-between align-items-center py-3"
-                          style={{
-                            borderBottom: '1px solid #f0f2f5',
-                          }}
-                        >
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: '#697386',
-                            }}
-                          >
-                            Doctors
-                          </span>
-
-                          <strong style={{ fontSize: 13 }}>
-                            {stats?.overview?.activeDoctors || 0}
-                          </strong>
-                        </div>
-
-                        <div
-                          className="d-flex justify-content-between align-items-center py-3"
-                        >
-                          <span
-                            style={{
-                              fontSize: 12,
-                              color: '#697386',
-                            }}
-                          >
-                            Patients
-                          </span>
-
-                          <strong style={{ fontSize: 13 }}>
-                            {stats?.overview?.activePatients || 0}
-                          </strong>
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          marginTop: 8,
-                          padding: 12,
-                          borderRadius: 7,
-                          background: '#f1faf6',
-                          color: '#31956a',
-                          fontSize: 11,
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 8,
-                        }}
-                      >
-                        <Icon name="check" size={15} />
-                        Platform services are operational
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Hospitals */}
-
-                <div className="col-xl-8">
-                  <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e8ebf1',
-                      borderRadius: 9,
-                    }}
-                  >
-                    <div
-                      className="d-flex justify-content-between align-items-center"
-                      style={{
-                        padding: '18px 20px',
-                        borderBottom: '1px solid #edf0f4',
-                      }}
-                    >
                       <div>
-                        <h5
-                          style={{
-                            fontSize: 15,
-                            fontWeight: 700,
-                            margin: 0,
-                          }}
-                        >
-                          Healthcare Network
-                        </h5>
-
-                        <div
-                          style={{
-                            fontSize: 11,
-                            color: '#9aa3b2',
-                            marginTop: 4,
-                          }}
-                        >
-                          Recently registered healthcare facilities
+                        <div className="small text-muted">
+                          Healthcare
+                          Network
                         </div>
+
+                        <h3 className="fw-bold mb-0">
+                          {
+                            allHospitals.length
+                          }
+                        </h3>
                       </div>
-
-                      <button
-                        className="btn btn-sm btn-light border"
-                        style={{ fontSize: 11 }}
-                        onClick={() => setActiveTab('hospitals')}
-                      >
-                        Manage
-                      </button>
-                    </div>
-
-                    <div className="table-responsive">
-                      <table
-                        className="table align-middle mb-0"
-                        style={{ fontSize: 12 }}
-                      >
-                        <thead>
-                          <tr
-                            style={{
-                              background: '#fafbfc',
-                              color: '#929baa',
-                              fontSize: 10,
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            <th className="border-0 px-4 py-3">
-                              Healthcare Facility
-                            </th>
-                            <th className="border-0">
-                              Location
-                            </th>
-                            <th className="border-0">
-                              Doctors
-                            </th>
-                            <th className="border-0">
-                              Status
-                            </th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {allHospitals.slice(0, 5).map((hospital) => (
-                            <tr key={hospital.id}>
-                              <td className="px-4">
-                                <div className="d-flex align-items-center gap-2">
-                                  <div
-                                    style={{
-                                      width: 30,
-                                      height: 30,
-                                      borderRadius: 6,
-                                      background: '#edf3ff',
-                                      color: '#4777dd',
-                                      display: 'flex',
-                                      alignItems: 'center',
-                                      justifyContent: 'center',
-                                    }}
-                                  >
-                                    <Icon name="building" size={15} />
-                                  </div>
-
-                                  <strong
-                                    style={{
-                                      color: '#3b4658',
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    {hospital.name}
-                                  </strong>
-                                </div>
-                              </td>
-
-                              <td
-                                style={{
-                                  color: '#7f8999',
-                                }}
-                              >
-                                {hospital.city ||
-                                  hospital.address ||
-                                  'Not specified'}
-                              </td>
-
-                              <td>
-                                {hospital._count?.doctors ?? 0}
-                              </td>
-
-                              <td>
-                                <span
-                                  style={{
-                                    display: 'inline-flex',
-                                    alignItems: 'center',
-                                    gap: 5,
-                                    padding: '4px 8px',
-                                    borderRadius: 20,
-                                    fontSize: 10,
-                                    fontWeight: 700,
-                                    background:
-                                      hospital.status === 'APPROVED'
-                                        ? '#eaf8f1'
-                                        : hospital.status === 'PENDING'
-                                        ? '#fff4e5'
-                                        : '#ffeded',
-                                    color:
-                                      hospital.status === 'APPROVED'
-                                        ? '#299466'
-                                        : hospital.status === 'PENDING'
-                                        ? '#d88a26'
-                                        : '#d04e5d',
-                                  }}
-                                >
-                                  {hospital.status}
-                                </span>
-                              </td>
-                            </tr>
-                          ))}
-
-                          {allHospitals.length === 0 && (
-                            <tr>
-                              <td
-                                colSpan={4}
-                                className="text-center text-muted py-4"
-                              >
-                                No healthcare facilities registered yet.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
                     </div>
                   </div>
                 </div>
 
-                {/* Quick actions */}
-
-                <div className="col-xl-4">
+                <div className="col-md-4">
                   <div
-                    style={{
-                      background: '#fff',
-                      border: '1px solid #e8ebf1',
-                      borderRadius: 9,
-                    }}
+                    className="bg-white border rounded-3 p-4 h-100"
                   >
-                    <div
-                      style={{
-                        padding: '18px 20px',
-                        borderBottom: '1px solid #edf0f4',
-                      }}
-                    >
-                      <h5
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          margin: 0,
-                        }}
-                      >
-                        Administrative Actions
-                      </h5>
-
+                    <div className="d-flex align-items-center gap-3">
                       <div
                         style={{
-                          fontSize: 11,
-                          color: '#9aa3b2',
-                          marginTop: 4,
+                          width: 45,
+                          height: 45,
+                          borderRadius: 10,
+                          background:
+                            '#eaf8f1',
+                          color:
+                            '#299466',
+                          display:
+                            'flex',
+                          alignItems:
+                            'center',
+                          justifyContent:
+                            'center',
                         }}
                       >
-                        Common system management tasks
+                        <Icon
+                          name="users"
+                          size={22}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="small text-muted">
+                          Hospital Users
+                        </div>
+
+                        <h3 className="fw-bold mb-0">
+                          {totalHospitalUsers.toLocaleString()}
+                        </h3>
                       </div>
                     </div>
+                  </div>
+                </div>
 
-                    <div style={{ padding: 12 }}>
-                      <button
-                        className="w-100 border-0 text-start"
-                        onClick={() => setActiveTab('approvals')}
+                <div className="col-md-4">
+                  <div
+                    className="bg-white border rounded-3 p-4 h-100"
+                  >
+                    <div className="d-flex align-items-center gap-3">
+                      <div
                         style={{
-                          background: '#f8f9fb',
-                          borderRadius: 7,
-                          padding: 13,
-                          display: 'flex',
-                          alignItems: 'center',
-                          marginBottom: 8,
+                          width: 45,
+                          height: 45,
+                          borderRadius: 10,
+                          background:
+                            '#fff4e5',
+                          color:
+                            '#d88a26',
+                          display:
+                            'flex',
+                          alignItems:
+                            'center',
+                          justifyContent:
+                            'center',
                         }}
                       >
-                        <div
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 7,
-                            background: '#fff1df',
-                            color: '#d98726',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Icon name="clock" size={17} />
+                        <Icon
+                          name="clock"
+                          size={22}
+                        />
+                      </div>
+
+                      <div>
+                        <div className="small text-muted">
+                          Pending Reviews
                         </div>
 
-                        <div className="ms-3">
-                          <div
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Review approvals
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: '#929baa',
-                            }}
-                          >
-                            {totalPending} request
-                            {totalPending !== 1 ? 's' : ''} pending
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        className="w-100 border-0 text-start"
-                        onClick={() => {
-                          setActiveTab('hospitals');
-                          setShowAddHospital(true);
-                        }}
-                        style={{
-                          background: '#f8f9fb',
-                          borderRadius: 7,
-                          padding: 13,
-                          display: 'flex',
-                          alignItems: 'center',
-                          marginBottom: 8,
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 7,
-                            background: '#edf3ff',
-                            color: '#4777dd',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Icon name="plus" size={17} />
-                        </div>
-
-                        <div className="ms-3">
-                          <div
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Register hospital
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: '#929baa',
-                            }}
-                          >
-                            Add a verified facility
-                          </div>
-                        </div>
-                      </button>
-
-                      <button
-                        className="w-100 border-0 text-start"
-                        onClick={() => setActiveTab('hospitals')}
-                        style={{
-                          background: '#f8f9fb',
-                          borderRadius: 7,
-                          padding: 13,
-                          display: 'flex',
-                          alignItems: 'center',
-                        }}
-                      >
-                        <div
-                          style={{
-                            width: 34,
-                            height: 34,
-                            borderRadius: 7,
-                            background: '#eaf8f1',
-                            color: '#299466',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                          }}
-                        >
-                          <Icon name="hospital" size={17} />
-                        </div>
-
-                        <div className="ms-3">
-                          <div
-                            style={{
-                              fontSize: 12,
-                              fontWeight: 700,
-                            }}
-                          >
-                            Manage hospitals
-                          </div>
-
-                          <div
-                            style={{
-                              fontSize: 10,
-                              color: '#929baa',
-                            }}
-                          >
-                            {allHospitals.length} facilities
-                          </div>
-                        </div>
-                      </button>
+                        <h3 className="fw-bold mb-0">
+                          {
+                            totalPending
+                          }
+                        </h3>
+                      </div>
                     </div>
                   </div>
+                </div>
+              </div>
+
+              {/* HOSPITAL NETWORK TABLE */}
+
+              <div className="bg-white border rounded-3">
+                <div
+                  className="d-flex justify-content-between align-items-center"
+                  style={{
+                    padding:
+                      '18px 20px',
+                    borderBottom:
+                      '1px solid #edf0f4',
+                  }}
+                >
+                  <div>
+                    <h5 className="fw-bold mb-1">
+                      Healthcare
+                      Network
+                    </h5>
+
+                    <div
+                      style={{
+                        fontSize: 11,
+                        color:
+                          '#9aa3b2',
+                      }}
+                    >
+                      Hospital
+                      users and
+                      operational
+                      status
+                    </div>
+                  </div>
+
+                  <button
+                    className="btn btn-sm btn-light border"
+                    onClick={() =>
+                      setActiveTab(
+                        'hospitals'
+                      )
+                    }
+                  >
+                    Manage
+                    <span className="ms-1">
+                      <Icon
+                        name="arrow"
+                        size={13}
+                      />
+                    </span>
+                  </button>
+                </div>
+
+                <div className="table-responsive">
+                  <table className="table align-middle mb-0">
+                    <thead>
+                      <tr
+                        style={{
+                          background:
+                            '#fafbfc',
+                          color:
+                            '#929baa',
+                          fontSize: 10,
+                          textTransform:
+                            'uppercase',
+                        }}
+                      >
+                        <th className="px-4">
+                          Healthcare
+                          Facility
+                        </th>
+
+                        <th>
+                          Location
+                        </th>
+
+                        <th>
+                          Doctors
+                        </th>
+
+                        <th>
+                          Patients
+                        </th>
+
+                        <th>
+                          Total Users
+                        </th>
+
+                        <th>
+                          Status
+                        </th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {allHospitals
+                        .slice(
+                          0,
+                          8
+                        )
+                        .map(
+                          (
+                            hospital
+                          ) => {
+                            const doctors =
+                              getDoctorCount(
+                                hospital
+                              );
+
+                            const patients =
+                              getPatientCount(
+                                hospital
+                              );
+
+                            const users =
+                              getUserCount(
+                                hospital
+                              );
+
+                            return (
+                              <tr
+                                key={
+                                  hospital.id
+                                }
+                              >
+                                <td className="px-4">
+                                  <div className="d-flex align-items-center gap-2">
+                                    <div
+                                      style={{
+                                        width: 34,
+                                        height: 34,
+                                        borderRadius: 8,
+                                        background:
+                                          '#edf3ff',
+                                        color:
+                                          '#4777dd',
+                                        display:
+                                          'flex',
+                                        alignItems:
+                                          'center',
+                                        justifyContent:
+                                          'center',
+                                      }}
+                                    >
+                                      <Icon
+                                        name="building"
+                                        size={
+                                          17
+                                        }
+                                      />
+                                    </div>
+
+                                    <strong
+                                      style={{
+                                        fontSize: 12,
+                                      }}
+                                    >
+                                      {
+                                        hospital.name
+                                      }
+                                    </strong>
+                                  </div>
+                                </td>
+
+                                <td className="text-muted small">
+                                  {hospital.city ||
+                                    hospital.region ||
+                                    hospital.address ||
+                                    'Not specified'}
+                                </td>
+
+                                <td>
+                                  {doctors}
+                                </td>
+
+                                <td>
+                                  {patients}
+                                </td>
+
+                                <td>
+                                  <strong>
+                                    {users}
+                                  </strong>
+                                </td>
+
+                                <td>
+                                  <span
+                                    className={`badge ${
+                                      hospital.status ===
+                                      'APPROVED'
+                                        ? 'bg-success'
+                                        : hospital.status ===
+                                          'PENDING'
+                                        ? 'bg-warning text-dark'
+                                        : 'bg-danger'
+                                    }`}
+                                  >
+                                    {
+                                      hospital.status
+                                    }
+                                  </span>
+                                </td>
+                              </tr>
+                            );
+                          }
+                        )}
+
+                      {allHospitals.length ===
+                        0 && (
+                        <tr>
+                          <td
+                            colSpan={
+                              6
+                            }
+                            className="text-center text-muted py-5"
+                          >
+                            No healthcare
+                            facilities
+                            registered
+                            yet.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </div>
             </>
           )}
 
-          {/* ================= APPROVALS ================= */}
+          {/* =====================================================
+              APPROVALS
+          ===================================================== */}
 
-          {activeTab === 'approvals' && (
+          {activeTab ===
+            'approvals' && (
             <div className="row g-3">
-              {/* Hospitals */}
+
+              {/* HOSPITAL APPROVALS */}
 
               <div className="col-12">
-                <div
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #e8ebf1',
-                    borderRadius: 9,
-                  }}
-                >
-                  <div
-                    className="d-flex justify-content-between align-items-center"
-                    style={{
-                      padding: '18px 20px',
-                      borderBottom: '1px solid #edf0f4',
-                    }}
-                  >
-                    <div>
-                      <h5
-                        style={{
-                          fontSize: 15,
-                          fontWeight: 700,
-                          margin: 0,
-                        }}
-                      >
-                        Hospital Registration Requests
-                      </h5>
+                <div className="bg-white border rounded-3">
+                  <div className="p-4 border-bottom">
+                    <h5 className="fw-bold mb-1">
+                      Hospital Registration
+                      Requests
+                    </h5>
 
-                      <span
-                        style={{
-                          color: '#929baa',
-                          fontSize: 11,
-                        }}
-                      >
-                        Verify healthcare facilities before activation
-                      </span>
-                    </div>
-
-                    <button
-                      className="btn btn-sm btn-light border"
-                      onClick={loadAdminData}
-                    >
-                      <Icon name="refresh" size={14} />
-                      <span className="ms-1">Refresh</span>
-                    </button>
+                    <small className="text-muted">
+                      Verify healthcare
+                      facilities before
+                      activation.
+                    </small>
                   </div>
 
-                  {pendingHospitals.length === 0 ? (
+                  {pendingHospitals.length ===
+                  0 ? (
                     <div className="text-center py-5 text-muted">
-                      <Icon name="check" size={28} />
+                      <Icon
+                        name="check"
+                        size={30}
+                      />
+
                       <div className="mt-2">
-                        No pending hospital registrations.
+                        No pending hospital
+                        registrations.
                       </div>
                     </div>
                   ) : (
@@ -1917,80 +2077,255 @@ export default function AdminDashboard() {
                         <thead>
                           <tr
                             style={{
-                              background: '#fafbfc',
+                              background:
+                                '#fafbfc',
                               fontSize: 10,
-                              color: '#929baa',
-                              textTransform: 'uppercase',
+                              color:
+                                '#929baa',
+                              textTransform:
+                                'uppercase',
                             }}
                           >
-                            <th className="px-4">Hospital</th>
-                            <th>Location</th>
-                            <th>Email</th>
-                            <th>License</th>
-                            <th>Submitted</th>
-                            <th>Actions</th>
+                            <th className="px-4">
+                              Hospital
+                            </th>
+
+                            <th>
+                              Location
+                            </th>
+
+                            <th>
+                              Email
+                            </th>
+
+                            <th>
+                              License
+                            </th>
+
+                            <th>
+                              Actions
+                            </th>
                           </tr>
                         </thead>
 
                         <tbody>
-                          {pendingHospitals.map((hospital) => (
-                            <tr key={hospital.id}>
-                              <td className="px-4">
-                                <strong>{hospital.name}</strong>
-                              </td>
-
-                              <td>
-                                {hospital.city ||
-                                  hospital.address ||
-                                  'N/A'}
-                              </td>
-
-                              <td>{hospital.email || 'N/A'}</td>
-
-                              <td>
-                                {hospital.licenseNumber || 'N/A'}
-                              </td>
-
-                              <td>
-                                {new Date(
-                                  hospital.createdAt
-                                ).toLocaleDateString()}
-                              </td>
-
-                              <td>
-                                <div className="d-flex gap-2">
-                                  <button
-                                    className="btn btn-sm btn-success"
-                                    onClick={() =>
-                                      handleApproveHospital(
-                                        hospital.id,
-                                        'APPROVE'
-                                      )
+                          {pendingHospitals.map(
+                            (
+                              hospital
+                            ) => (
+                              <tr
+                                key={
+                                  hospital.id
+                                }
+                              >
+                                <td className="px-4">
+                                  <strong>
+                                    {
+                                      hospital.name
                                     }
-                                    disabled={actionLoading}
-                                  >
-                                    <Icon name="check" size={14} />
-                                    <span className="ms-1">
+                                  </strong>
+                                </td>
+
+                                <td>
+                                  {
+                                    hospital.city ||
+                                    hospital.address ||
+                                    'N/A'
+                                  }
+                                </td>
+
+                                <td>
+                                  {
+                                    hospital.email ||
+                                    'N/A'
+                                  }
+                                </td>
+
+                                <td>
+                                  {
+                                    hospital.licenseNumber ||
+                                    'N/A'
+                                  }
+                                </td>
+
+                                <td>
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-sm btn-success"
+                                      onClick={() =>
+                                        handleApproveHospital(
+                                          hospital.id,
+                                          'APPROVE'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
+                                      <Icon
+                                        name="check"
+                                        size={
+                                          14
+                                        }
+                                      />
+
+                                      <span className="ms-1">
+                                        Approve
+                                      </span>
+                                    </button>
+
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={() =>
+                                        handleApproveHospital(
+                                          hospital.id,
+                                          'REJECT'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* DOCTOR APPROVALS */}
+
+              <div className="col-12">
+                <div className="bg-white border rounded-3">
+                  <div className="p-4 border-bottom">
+                    <h5 className="fw-bold mb-1">
+                      Doctor Registration
+                      Requests
+                    </h5>
+
+                    <small className="text-muted">
+                      Verify healthcare
+                      professionals and
+                      hospital association.
+                    </small>
+                  </div>
+
+                  {pendingDoctors.length ===
+                  0 ? (
+                    <div className="text-center py-5 text-muted">
+                      No pending doctor
+                      registrations.
+                    </div>
+                  ) : (
+                    <div className="table-responsive">
+                      <table className="table table-hover align-middle mb-0">
+                        <thead>
+                          <tr
+                            style={{
+                              background:
+                                '#fafbfc',
+                              fontSize: 10,
+                              color:
+                                '#929baa',
+                              textTransform:
+                                'uppercase',
+                            }}
+                          >
+                            <th className="px-4">
+                              Doctor
+                            </th>
+
+                            <th>
+                              Specialization
+                            </th>
+
+                            <th>
+                              Hospital
+                            </th>
+
+                            <th>
+                              Actions
+                            </th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {pendingDoctors.map(
+                            (
+                              doctor
+                            ) => (
+                              <tr
+                                key={
+                                  doctor.id
+                                }
+                              >
+                                <td className="px-4">
+                                  <strong>
+                                    {
+                                      doctor.name
+                                    }
+                                  </strong>
+                                </td>
+
+                                <td>
+                                  {
+                                    doctor.specialization ||
+                                    'General Medicine'
+                                  }
+                                </td>
+
+                                <td>
+                                  {
+                                    doctor
+                                      .hospital
+                                      ?.name ||
+                                    'N/A'
+                                  }
+                                </td>
+
+                                <td>
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-sm btn-success"
+                                      onClick={() =>
+                                        handleApproveDoctor(
+                                          doctor.id,
+                                          'APPROVE'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
                                       Approve
-                                    </span>
-                                  </button>
+                                    </button>
 
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleApproveHospital(
-                                        hospital.id,
-                                        'REJECT'
-                                      )
-                                    }
-                                    disabled={actionLoading}
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={() =>
+                                        handleApproveDoctor(
+                                          doctor.id,
+                                          'REJECT'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -1998,45 +2333,36 @@ export default function AdminDashboard() {
                 </div>
               </div>
 
-              {/* Doctors */}
+              {/* PATIENT APPROVALS */}
 
               <div className="col-12">
-                <div
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #e8ebf1',
-                    borderRadius: 9,
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: '18px 20px',
-                      borderBottom: '1px solid #edf0f4',
-                    }}
-                  >
-                    <h5
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        margin: 0,
-                      }}
-                    >
-                      Doctor Registration Requests
-                    </h5>
+                <div className="bg-white border rounded-3">
+                  <div className="p-4 border-bottom">
+                    <div className="d-flex justify-content-between align-items-center">
+                      <div>
+                        <h5 className="fw-bold mb-1">
+                          Patient Registration
+                          Requests
+                        </h5>
 
-                    <span
-                      style={{
-                        color: '#929baa',
-                        fontSize: 11,
-                      }}
-                    >
-                      Verify doctors and their hospital association
-                    </span>
+                        <small className="text-muted">
+                          Privacy-protected
+                          patient onboarding
+                          and care assignment.
+                        </small>
+                      </div>
+
+                      <span className="badge bg-light text-dark border">
+                        Privacy Mode
+                      </span>
+                    </div>
                   </div>
 
-                  {pendingDoctors.length === 0 ? (
+                  {pendingPatients.length ===
+                  0 ? (
                     <div className="text-center py-5 text-muted">
-                      No pending doctor registrations.
+                      No pending patient
+                      registrations.
                     </div>
                   ) : (
                     <div className="table-responsive">
@@ -2044,184 +2370,191 @@ export default function AdminDashboard() {
                         <thead>
                           <tr
                             style={{
-                              background: '#fafbfc',
+                              background:
+                                '#fafbfc',
                               fontSize: 10,
-                              color: '#929baa',
-                              textTransform: 'uppercase',
+                              color:
+                                '#929baa',
+                              textTransform:
+                                'uppercase',
                             }}
                           >
-                            <th className="px-4">Doctor</th>
-                            <th>Specialization</th>
-                            <th>Hospital</th>
-                            <th>Email</th>
-                            <th>Actions</th>
+                            <th className="px-4">
+                              Patient
+                            </th>
+
+                            <th>
+                              Hospital
+                            </th>
+
+                            <th>
+                              Care Assignment
+                            </th>
+
+                            <th>
+                              Status
+                            </th>
+
+                            <th>
+                              Actions
+                            </th>
                           </tr>
                         </thead>
 
                         <tbody>
-                          {pendingDoctors.map((doctor) => (
-                            <tr key={doctor.id}>
-                              <td className="px-4">
-                                <strong>{doctor.name}</strong>
-                              </td>
+                          {pendingPatients.map(
+                            (
+                              patient
+                            ) => (
+                              <tr
+                                key={
+                                  patient.id
+                                }
+                              >
+                                {/* IMPORTANT:
+                                    REAL PATIENT NAME IS NOT DISPLAYED */}
+                                <td className="px-4">
+                                  <div className="d-flex align-items-center gap-2">
+                                    <div
+                                      style={{
+                                        width: 34,
+                                        height: 34,
+                                        borderRadius:
+                                          '50%',
+                                        background:
+                                          '#f2efff',
+                                        color:
+                                          '#8067d8',
+                                        display:
+                                          'flex',
+                                        alignItems:
+                                          'center',
+                                        justifyContent:
+                                          'center',
+                                        fontWeight:
+                                          700,
+                                      }}
+                                    >
+                                      P
+                                    </div>
 
-                              <td>
-                                {doctor.specialization ||
-                                  'General Medicine'}
-                              </td>
+                                    <div>
+                                      <strong
+                                        style={{
+                                          fontSize: 12,
+                                        }}
+                                      >
+                                        {
+                                          getPatientDisplayName(
+                                            patient
+                                          )
+                                        }
+                                      </strong>
 
-                              <td>
-                                {doctor.hospital?.name || 'N/A'}
-                              </td>
+                                      <div
+                                        style={{
+                                          fontSize: 10,
+                                          color:
+                                            '#9aa3b2',
+                                        }}
+                                      >
+                                        Patient
+                                        identity
+                                        protected
+                                      </div>
+                                    </div>
+                                  </div>
+                                </td>
 
-                              <td>
-                                {doctor.user?.email || 'N/A'}
-                              </td>
+                                <td>
+                                  {
+                                    patient
+                                      .hospital
+                                      ?.name ||
+                                    'N/A'
+                                  }
+                                </td>
 
-                              <td>
-                                <div className="d-flex gap-2">
-                                  <button
-                                    className="btn btn-sm btn-success"
-                                    onClick={() =>
-                                      handleApproveDoctor(
-                                        doctor.id,
-                                        'APPROVE'
-                                      )
-                                    }
-                                    disabled={actionLoading}
+                                {/* DOCTOR'S REAL NAME HIDDEN */}
+
+                                <td>
+                                  <span
+                                    style={{
+                                      display:
+                                        'inline-flex',
+                                      alignItems:
+                                        'center',
+                                      gap: 7,
+                                      padding:
+                                        '6px 10px',
+                                      borderRadius:
+                                        20,
+                                      background:
+                                        '#f0f4fb',
+                                      color:
+                                        '#526b94',
+                                      fontSize: 11,
+                                      fontWeight:
+                                        600,
+                                    }}
                                   >
-                                    Approve
-                                  </button>
+                                    <Icon
+                                      name="doctor"
+                                      size={
+                                        14
+                                      }
+                                    />
 
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleApproveDoctor(
-                                        doctor.id,
-                                        'REJECT'
-                                      )
+                                    {patient.assignedDoctor
+                                      ? 'Assigned clinician'
+                                      : 'Not assigned'}
+                                  </span>
+                                </td>
+
+                                <td>
+                                  <span className="badge bg-warning text-dark">
+                                    {
+                                      patient.status
                                     }
-                                    disabled={actionLoading}
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
+                                  </span>
+                                </td>
 
-              {/* Patients */}
+                                <td>
+                                  <div className="d-flex gap-2">
+                                    <button
+                                      className="btn btn-sm btn-success"
+                                      onClick={() =>
+                                        handleApprovePatient(
+                                          patient.id,
+                                          'APPROVE'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
+                                      Approve
+                                    </button>
 
-              <div className="col-12">
-                <div
-                  style={{
-                    background: '#fff',
-                    border: '1px solid #e8ebf1',
-                    borderRadius: 9,
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: '18px 20px',
-                      borderBottom: '1px solid #edf0f4',
-                    }}
-                  >
-                    <h5
-                      style={{
-                        fontSize: 15,
-                        fontWeight: 700,
-                        margin: 0,
-                      }}
-                    >
-                      Patient Registration Requests
-                    </h5>
-
-                    <span
-                      style={{
-                        color: '#929baa',
-                        fontSize: 11,
-                      }}
-                    >
-                      Review patient onboarding and care assignment
-                    </span>
-                  </div>
-
-                  {pendingPatients.length === 0 ? (
-                    <div className="text-center py-5 text-muted">
-                      No pending patient registrations.
-                    </div>
-                  ) : (
-                    <div className="table-responsive">
-                      <table className="table table-hover align-middle mb-0">
-                        <thead>
-                          <tr
-                            style={{
-                              background: '#fafbfc',
-                              fontSize: 10,
-                              color: '#929baa',
-                              textTransform: 'uppercase',
-                            }}
-                          >
-                            <th className="px-4">Patient</th>
-                            <th>Hospital</th>
-                            <th>Assigned Doctor</th>
-                            <th>Actions</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {pendingPatients.map((patient) => (
-                            <tr key={patient.id}>
-                              <td className="px-4">
-                                <strong>{patient.fullName}</strong>
-                              </td>
-
-                              <td>
-                                {patient.hospital?.name || 'N/A'}
-                              </td>
-
-                              <td>
-                                {patient.assignedDoctor?.name ||
-                                  'Not assigned'}
-                              </td>
-
-                              <td>
-                                <div className="d-flex gap-2">
-                                  <button
-                                    className="btn btn-sm btn-success"
-                                    onClick={() =>
-                                      handleApprovePatient(
-                                        patient.id,
-                                        'APPROVE'
-                                      )
-                                    }
-                                    disabled={actionLoading}
-                                  >
-                                    Approve
-                                  </button>
-
-                                  <button
-                                    className="btn btn-sm btn-outline-danger"
-                                    onClick={() =>
-                                      handleApprovePatient(
-                                        patient.id,
-                                        'REJECT'
-                                      )
-                                    }
-                                    disabled={actionLoading}
-                                  >
-                                    Reject
-                                  </button>
-                                </div>
-                              </td>
-                            </tr>
-                          ))}
+                                    <button
+                                      className="btn btn-sm btn-outline-danger"
+                                      onClick={() =>
+                                        handleApprovePatient(
+                                          patient.id,
+                                          'REJECT'
+                                        )
+                                      }
+                                      disabled={
+                                        actionLoading
+                                      }
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+                                </td>
+                              </tr>
+                            )
+                          )}
                         </tbody>
                       </table>
                     </div>
@@ -2231,49 +2564,48 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* ================= HOSPITAL MANAGEMENT ================= */}
+          {/* =====================================================
+              HOSPITAL MANAGEMENT
+          ===================================================== */}
 
-          {activeTab === 'hospitals' && (
-            <div
-              style={{
-                background: '#fff',
-                border: '1px solid #e8ebf1',
-                borderRadius: 9,
-              }}
-            >
+          {activeTab ===
+            'hospitals' && (
+            <div className="bg-white border rounded-3">
               <div
                 className="d-flex flex-wrap justify-content-between align-items-center gap-3"
                 style={{
-                  padding: '18px 20px',
-                  borderBottom: '1px solid #edf0f4',
+                  padding:
+                    '18px 20px',
+                  borderBottom:
+                    '1px solid #edf0f4',
                 }}
               >
                 <div>
-                  <h5
-                    style={{
-                      fontSize: 15,
-                      fontWeight: 700,
-                      margin: 0,
-                    }}
-                  >
+                  <h5 className="fw-bold mb-1">
                     Hospital Directory
                   </h5>
 
-                  <span
-                    style={{
-                      color: '#929baa',
-                      fontSize: 11,
-                    }}
-                  >
-                    Manage registered healthcare facilities
-                  </span>
+                  <small className="text-muted">
+                    Manage healthcare
+                    facilities and
+                    monitor their
+                    user population.
+                  </small>
                 </div>
 
                 <button
                   className="btn btn-primary btn-sm"
-                  onClick={() => setShowAddHospital(!showAddHospital)}
+                  onClick={() =>
+                    setShowAddHospital(
+                      !showAddHospital
+                    )
+                  }
                 >
-                  <Icon name="plus" size={14} />
+                  <Icon
+                    name="plus"
+                    size={14}
+                  />
+
                   <span className="ms-1">
                     {showAddHospital
                       ? 'Cancel'
@@ -2282,22 +2614,24 @@ export default function AdminDashboard() {
                 </button>
               </div>
 
+              {/* ADD HOSPITAL */}
+
               {showAddHospital && (
                 <form
-                  onSubmit={handleCreateHospital}
+                  onSubmit={
+                    handleCreateHospital
+                  }
                   style={{
                     padding: 20,
-                    background: '#fafbfc',
-                    borderBottom: '1px solid #edf0f4',
+                    background:
+                      '#fafbfc',
+                    borderBottom:
+                      '1px solid #edf0f4',
                   }}
                 >
-                  <h6
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 14,
-                    }}
-                  >
-                    Register Healthcare Facility
+                  <h6 className="fw-bold">
+                    Register Healthcare
+                    Facility
                   </h6>
 
                   <div className="row g-3 mt-1">
@@ -2309,11 +2643,14 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         className="form-control"
-                        value={newHospital.name}
+                        value={
+                          newHospital.name
+                        }
                         onChange={(e) =>
                           setNewHospital({
                             ...newHospital,
-                            name: e.target.value,
+                            name: e.target
+                              .value,
                           })
                         }
                         required
@@ -2328,11 +2665,15 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         className="form-control"
-                        value={newHospital.organizationType}
+                        value={
+                          newHospital.organizationType
+                        }
                         onChange={(e) =>
                           setNewHospital({
                             ...newHospital,
-                            organizationType: e.target.value,
+                            organizationType:
+                              e.target
+                                .value,
                           })
                         }
                       />
@@ -2346,11 +2687,15 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         className="form-control"
-                        value={newHospital.licenseNumber}
+                        value={
+                          newHospital.licenseNumber
+                        }
                         onChange={(e) =>
                           setNewHospital({
                             ...newHospital,
-                            licenseNumber: e.target.value,
+                            licenseNumber:
+                              e.target
+                                .value,
                           })
                         }
                       />
@@ -2364,11 +2709,14 @@ export default function AdminDashboard() {
                       <input
                         type="text"
                         className="form-control"
-                        value={newHospital.city}
+                        value={
+                          newHospital.city
+                        }
                         onChange={(e) =>
                           setNewHospital({
                             ...newHospital,
-                            city: e.target.value,
+                            city: e.target
+                              .value,
                           })
                         }
                       />
@@ -2378,7 +2726,9 @@ export default function AdminDashboard() {
                   <button
                     type="submit"
                     className="btn btn-success mt-3"
-                    disabled={actionLoading}
+                    disabled={
+                      actionLoading
+                    }
                   >
                     {actionLoading
                       ? 'Saving...'
@@ -2387,34 +2737,53 @@ export default function AdminDashboard() {
                 </form>
               )}
 
-              {/* Filters */}
+              {/* SEARCH */}
 
-              <div style={{ padding: 20 }}>
-                <div className="row g-3 mb-3">
+              <div
+                style={{
+                  padding: 20,
+                  borderBottom:
+                    '1px solid #edf0f4',
+                }}
+              >
+                <div className="row g-3">
                   <div className="col-md-8">
                     <div
                       style={{
-                        border: '1px solid #e3e7ee',
+                        border:
+                          '1px solid #e3e7ee',
                         borderRadius: 7,
                         height: 39,
-                        display: 'flex',
-                        alignItems: 'center',
-                        padding: '0 12px',
+                        display:
+                          'flex',
+                        alignItems:
+                          'center',
+                        padding:
+                          '0 12px',
                       }}
                     >
-                      <Icon name="search" size={16} />
+                      <Icon
+                        name="search"
+                        size={16}
+                      />
 
                       <input
                         type="text"
                         placeholder="Search hospital by name or city..."
-                        value={searchQuery}
+                        value={
+                          searchQuery
+                        }
                         onChange={(e) =>
-                          setSearchQuery(e.target.value)
+                          setSearchQuery(
+                            e.target
+                              .value
+                          )
                         }
                         style={{
                           border: 0,
                           outline: 0,
-                          width: '100%',
+                          width:
+                            '100%',
                           marginLeft: 8,
                           fontSize: 12,
                         }}
@@ -2425,169 +2794,378 @@ export default function AdminDashboard() {
                   <div className="col-md-4">
                     <select
                       className="form-select"
-                      value={statusFilter}
-                      onChange={(e) =>
-                        setStatusFilter(e.target.value)
+                      value={
+                        statusFilter
                       }
-                      style={{ fontSize: 12 }}
+                      onChange={(e) =>
+                        setStatusFilter(
+                          e.target
+                            .value
+                        )
+                      }
+                      style={{
+                        fontSize: 12,
+                      }}
                     >
-                      <option value="ALL">All Statuses</option>
-                      <option value="APPROVED">Approved</option>
-                      <option value="PENDING">Pending</option>
-                      <option value="REJECTED">Rejected</option>
+                      <option value="ALL">
+                        All Statuses
+                      </option>
+
+                      <option value="APPROVED">
+                        Approved
+                      </option>
+
+                      <option value="PENDING">
+                        Pending
+                      </option>
+
+                      <option value="REJECTED">
+                        Rejected
+                      </option>
                     </select>
                   </div>
                 </div>
+              </div>
 
-                {/* Hospital grid */}
+              {/* HOSPITAL CARDS */}
 
-                <div className="row g-3">
-                  {filteredHospitals.length === 0 ? (
-                    <div className="col-12 text-center text-muted py-5">
-                      No hospitals found.
-                    </div>
-                  ) : (
-                    filteredHospitals.map((hospital) => (
-                      <div
-                        className="col-md-6 col-xl-4"
-                        key={hospital.id}
-                      >
+              <div
+                className="row g-3"
+                style={{
+                  padding: 20,
+                }}
+              >
+                {filteredHospitals.length ===
+                0 ? (
+                  <div className="col-12 text-center text-muted py-5">
+                    No hospitals found.
+                  </div>
+                ) : (
+                  filteredHospitals.map(
+                    (hospital) => {
+                      const doctors =
+                        getDoctorCount(
+                          hospital
+                        );
+
+                      const patients =
+                        getPatientCount(
+                          hospital
+                        );
+
+                      const users =
+                        getUserCount(
+                          hospital
+                        );
+
+                      return (
                         <div
-                          style={{
-                            border: '1px solid #e8ebf1',
-                            borderRadius: 8,
-                            padding: 16,
-                            height: '100%',
-                          }}
+                          className="col-md-6 col-xl-4"
+                          key={
+                            hospital.id
+                          }
                         >
-                          <div className="d-flex justify-content-between align-items-start">
+                          <div
+                            className="h-100"
+                            style={{
+                              border:
+                                '1px solid #e8ebf1',
+                              borderRadius: 10,
+                              padding: 17,
+                              transition:
+                                'all .2s ease',
+                            }}
+                          >
+                            <div className="d-flex justify-content-between align-items-start">
+                              <div
+                                style={{
+                                  width: 42,
+                                  height: 42,
+                                  borderRadius: 10,
+                                  background:
+                                    '#edf3ff',
+                                  color:
+                                    '#4777dd',
+                                  display:
+                                    'flex',
+                                  alignItems:
+                                    'center',
+                                  justifyContent:
+                                    'center',
+                                }}
+                              >
+                                <Icon
+                                  name="hospital"
+                                  size={
+                                    21
+                                  }
+                                />
+                              </div>
+
+                              <span
+                                className={`badge ${
+                                  hospital.status ===
+                                  'APPROVED'
+                                    ? 'bg-success'
+                                    : hospital.status ===
+                                      'PENDING'
+                                    ? 'bg-warning text-dark'
+                                    : 'bg-danger'
+                                }`}
+                              >
+                                {
+                                  hospital.status
+                                }
+                              </span>
+                            </div>
+
+                            <h6
+                              className="fw-bold mt-3 mb-1"
+                              style={{
+                                fontSize: 14,
+                              }}
+                            >
+                              {
+                                hospital.name
+                              }
+                            </h6>
+
                             <div
                               style={{
-                                width: 38,
-                                height: 38,
-                                borderRadius: 8,
-                                background: '#edf3ff',
-                                color: '#4777dd',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                              }}
-                            >
-                              <Icon name="hospital" size={19} />
-                            </div>
-
-                            <span
-                              style={{
-                                fontSize: 10,
-                                fontWeight: 700,
-                                padding: '4px 8px',
-                                borderRadius: 20,
-                                background:
-                                  hospital.status ===
-                                  'APPROVED'
-                                    ? '#eaf8f1'
-                                    : hospital.status ===
-                                      'PENDING'
-                                    ? '#fff4e5'
-                                    : '#ffeded',
+                                fontSize: 11,
                                 color:
-                                  hospital.status ===
-                                  'APPROVED'
-                                    ? '#299466'
-                                    : hospital.status ===
-                                      'PENDING'
-                                    ? '#d88a26'
-                                    : '#d04e5d',
+                                  '#929baa',
                               }}
                             >
-                              {hospital.status}
-                            </span>
-                          </div>
-
-                          <h6
-                            style={{
-                              marginTop: 13,
-                              marginBottom: 4,
-                              fontWeight: 700,
-                              fontSize: 13,
-                            }}
-                          >
-                            {hospital.name}
-                          </h6>
-
-                          <div
-                            style={{
-                              fontSize: 11,
-                              color: '#929baa',
-                            }}
-                          >
-                            {hospital.city ||
-                              hospital.address ||
-                              'Location not set'}
-                          </div>
-
-                          <div
-                            className="d-flex gap-4"
-                            style={{
-                              marginTop: 16,
-                              paddingTop: 12,
-                              borderTop: '1px solid #edf0f4',
-                            }}
-                          >
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 10,
-                                  color: '#9aa3b2',
-                                }}
-                              >
-                                Doctors
-                              </div>
-
-                              <strong style={{ fontSize: 13 }}>
-                                {hospital._count?.doctors ?? 0}
-                              </strong>
+                              {hospital.city ||
+                                hospital.region ||
+                                hospital.address ||
+                                'Location not set'}
                             </div>
 
-                            <div>
-                              <div
-                                style={{
-                                  fontSize: 10,
-                                  color: '#9aa3b2',
-                                }}
-                              >
-                                License
-                              </div>
+                            {/* USER STATISTICS */}
 
-                              <strong style={{ fontSize: 11 }}>
-                                {hospital.licenseNumber ||
-                                  'N/A'}
-                              </strong>
-                            </div>
-                          </div>
-
-                          {hospital.status === 'PENDING' && (
-                            <button
-                              className="btn btn-success btn-sm w-100 mt-3"
-                              onClick={() =>
-                                handleApproveHospital(
-                                  hospital.id,
-                                  'APPROVE'
-                                )
-                              }
-                              disabled={actionLoading}
+                            <div
+                              className="row g-2 mt-3"
                             >
-                              <Icon name="check" size={14} />
-                              <span className="ms-1">
-                                Approve Hospital
-                              </span>
-                            </button>
-                          )}
+                              <div className="col-4">
+                                <div
+                                  style={{
+                                    background:
+                                      '#f7f9fc',
+                                    borderRadius: 8,
+                                    padding:
+                                      '10px 7px',
+                                    textAlign:
+                                      'center',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      color:
+                                        '#8067d8',
+                                      fontSize: 18,
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {
+                                      doctors
+                                    }
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: 9,
+                                      color:
+                                        '#929baa',
+                                      textTransform:
+                                        'uppercase',
+                                      fontWeight:
+                                        700,
+                                    }}
+                                  >
+                                    Doctors
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="col-4">
+                                <div
+                                  style={{
+                                    background:
+                                      '#f7f9fc',
+                                    borderRadius: 8,
+                                    padding:
+                                      '10px 7px',
+                                    textAlign:
+                                      'center',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      color:
+                                        '#ed8a45',
+                                      fontSize: 18,
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {
+                                      patients
+                                    }
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: 9,
+                                      color:
+                                        '#929baa',
+                                      textTransform:
+                                        'uppercase',
+                                      fontWeight:
+                                        700,
+                                    }}
+                                  >
+                                    Patients
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="col-4">
+                                <div
+                                  style={{
+                                    background:
+                                      '#edf3ff',
+                                    borderRadius: 8,
+                                    padding:
+                                      '10px 7px',
+                                    textAlign:
+                                      'center',
+                                  }}
+                                >
+                                  <div
+                                    style={{
+                                      color:
+                                        '#356fe5',
+                                      fontSize: 18,
+                                      fontWeight: 700,
+                                    }}
+                                  >
+                                    {
+                                      users
+                                    }
+                                  </div>
+
+                                  <div
+                                    style={{
+                                      fontSize: 9,
+                                      color:
+                                        '#4777dd',
+                                      textTransform:
+                                        'uppercase',
+                                      fontWeight:
+                                        700,
+                                    }}
+                                  >
+                                    Users
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+
+                            <div
+                              className="d-flex justify-content-between mt-3 pt-3"
+                              style={{
+                                borderTop:
+                                  '1px solid #edf0f4',
+                              }}
+                            >
+                              <div>
+                                <div
+                                  style={{
+                                    fontSize: 9,
+                                    color:
+                                      '#9aa3b2',
+                                    textTransform:
+                                      'uppercase',
+                                  }}
+                                >
+                                  License
+                                </div>
+
+                                <strong
+                                  style={{
+                                    fontSize: 11,
+                                  }}
+                                >
+                                  {
+                                    hospital.licenseNumber ||
+                                    'N/A'
+                                  }
+                                </strong>
+                              </div>
+
+                              <div
+                                className="text-end"
+                              >
+                                <div
+                                  style={{
+                                    fontSize: 9,
+                                    color:
+                                      '#9aa3b2',
+                                    textTransform:
+                                      'uppercase',
+                                  }}
+                                >
+                                  Total Users
+                                </div>
+
+                                <strong
+                                  style={{
+                                    fontSize: 14,
+                                    color:
+                                      '#356fe5',
+                                  }}
+                                >
+                                  {
+                                    users
+                                  }
+                                </strong>
+                              </div>
+                            </div>
+
+                            {hospital.status ===
+                              'PENDING' && (
+                              <button
+                                className="btn btn-success btn-sm w-100 mt-3"
+                                onClick={() =>
+                                  handleApproveHospital(
+                                    hospital.id,
+                                    'APPROVE'
+                                  )
+                                }
+                                disabled={
+                                  actionLoading
+                                }
+                              >
+                                <Icon
+                                  name="check"
+                                  size={
+                                    14
+                                  }
+                                />
+
+                                <span className="ms-1">
+                                  Approve
+                                  Hospital
+                                </span>
+                              </button>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    ))
-                  )}
-                </div>
+                      );
+                    }
+                  )
+                )}
               </div>
             </div>
           )}

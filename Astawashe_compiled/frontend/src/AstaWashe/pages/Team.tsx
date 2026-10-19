@@ -9,7 +9,7 @@ export default function Team() {
           <h1 className="display-4">Qualified Healthcare Professionals</h1>
         </div>
         <div className="owl-carousel team-carousel position-relative">
-          {['team-1.jpg', 'team-2.jpg', 'team-3.jpg'].map((img) => (
+          {['team-1.jpg', 'team-1.jpg', 'team-3.jpg'].map((img) => (
             <div className="team-item" key={img}>
               <div className="row g-0 bg-light rounded overflow-hidden">
                 <div className="col-12 col-sm-5 h-100">

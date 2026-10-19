@@ -24,14 +24,15 @@ async function main() {
   });
 
   const hospitals = await prisma.hospital.findMany({
-    include: {
-      doctors: {
-        include: {
-          user: true,
-        },
+include: {
+    _count: {
+      select: {
+        doctors: true,
+        patientProfiles: true,
       },
     },
-  });
+  },
+});
 
   const simplifiedPatients = patients.map((patient) => ({
     id: patient.id,

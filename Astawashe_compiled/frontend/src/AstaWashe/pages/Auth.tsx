@@ -590,14 +590,11 @@ export default function Auth() {
                         <div className="input-box my-2">
                           <input type="text" placeholder="Phone Number" value={phone} onChange={(e) => setPhone(e.target.value)} />
                         </div>
-                        <div className="input-box my-2">
-                          <input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
-                        </div>
+                      
                         <div className="input-box my-2">
                           <select value={gender} onChange={(e) => setGender(e.target.value)}>
                             <option value="MALE">MALE</option>
                             <option value="FEMALE">FEMALE</option>
-                            <option value="OTHER">OTHER</option>
                           </select>
                         </div>
                         <div className="input-box my-2">
@@ -605,15 +602,6 @@ export default function Auth() {
                         </div>
                         <div className="input-box my-2">
                           <input type="text" placeholder="Emergency Contact Phone" value={emergencyContactPhone} onChange={(e) => setEmergencyContactPhone(e.target.value)} />
-                        </div>
-                        <div className="input-box my-2">
-                          <input type="text" placeholder="Blood Group (e.g. O+)" value={bloodGroup} onChange={(e) => setBloodGroup(e.target.value)} />
-                        </div>
-                        <div className="input-box my-2">
-                          <input type="text" placeholder="Allergies" value={allergies} onChange={(e) => setAllergies(e.target.value)} />
-                        </div>
-                        <div className="input-box my-2">
-                          <input type="text" placeholder="Chronic Conditions" value={chronicConditions} onChange={(e) => setChronicConditions(e.target.value)} />
                         </div>
                       </>
                     )}
