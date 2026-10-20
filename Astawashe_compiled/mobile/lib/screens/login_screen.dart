@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../services/api_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -11,6 +12,10 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final ApiService _apiService = ApiService();
+
+  bool _isLoading = false;
+  String? _errorMessage;
 
   bool _obscurePassword = true;
 
@@ -18,19 +23,51 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _apiService.dispose();
     super.dispose();
   }
 
-  void _handleSignIn() {
+  Future<void> _handleSignIn() async {
     if (!_formKey.currentState!.validate()) {
       return;
     }
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Form validated. Backend login will be connected next.'),
-      ),
-    );
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final response = await _apiService.login(
+        email: _emailController.text.trim(),
+        password: _passwordController.text,
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Login successful.')));
+      } else {
+        setState(() {
+          _errorMessage =
+              'Sign-in failed (${response.statusCode}). Please check your credentials.';
+        });
+      }
+    } catch (_) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorMessage = 'Could not connect to the server. Please try again.';
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   @override
@@ -126,15 +163,33 @@ class _LoginScreenState extends State<LoginScreen> {
                         return null;
                       },
                     ),
+
+                    if (_errorMessage != null) ...[
+                      Text(
+                        _errorMessage!,
+                        style: const TextStyle(color: Colors.red),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+
                     const SizedBox(height: 28),
                     SizedBox(
                       height: 50,
                       child: FilledButton(
-                        onPressed: _handleSignIn,
-                        child: const Text(
-                          'Sign in',
-                          style: TextStyle(fontSize: 16),
-                        ),
+                        onPressed: _isLoading ? null : _handleSignIn,
+                        child: _isLoading
+                            ? const SizedBox(
+                                width: 20,
+                                height: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Text(
+                                'Sign in',
+                                style: TextStyle(fontSize: 16),
+                              ),
                       ),
                     ),
                   ],
