@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'services/api_service.dart';
+import 'screens/login_screen.dart';
 
 void main() {
   runApp(const AstaWasheApp());
@@ -89,6 +90,16 @@ class _HomeScreenState extends State<HomeScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFFF7F9FC),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(MaterialPageRoute(builder: (_) => const LoginScreen()));
+            },
+            child: const Text('Sign in'),
+          ),
+        ],
       ),
       body: Center(
         child: SingleChildScrollView(
