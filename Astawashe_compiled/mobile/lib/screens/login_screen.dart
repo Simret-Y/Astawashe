@@ -9,6 +9,21 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
+  String _getLoginErrorMessage(int statusCode) {
+    switch (statusCode) {
+      case 400:
+        return 'Please check the information you entered.';
+      case 401:
+        return 'Incorrect email or password.';
+      case 403:
+        return 'Your account cannot sign in yet.';
+      case 429:
+        return 'Too many attempts. Please try again later.';
+      default:
+        return 'Unable to sign in. Please try again.';
+    }
+  }
+
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -51,8 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ).showSnackBar(const SnackBar(content: Text('Login successful.')));
       } else {
         setState(() {
-          _errorMessage =
-              'Sign-in failed (${response.statusCode}). Please check your credentials.';
+          _errorMessage = _getLoginErrorMessage(response.statusCode);
         });
       }
     } catch (_) {
