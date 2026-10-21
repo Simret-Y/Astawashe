@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
+import 'patient_dashboard_screen.dart';
+import 'doctor_dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -9,21 +11,6 @@ class LoginScreen extends StatefulWidget {
 }
 
 class _LoginScreenState extends State<LoginScreen> {
-  String _getLoginErrorMessage(int statusCode) {
-    switch (statusCode) {
-      case 400:
-        return 'Please check the information you entered.';
-      case 401:
-        return 'Incorrect email or password.';
-      case 403:
-        return 'Your account cannot sign in yet.';
-      case 429:
-        return 'Too many attempts. Please try again later.';
-      default:
-        return 'Unable to sign in. Please try again.';
-    }
-  }
-
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -53,22 +40,60 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      final response = await _apiService.login(
+      final session = await _apiService.login(
         email: _emailController.text.trim(),
         password: _passwordController.text,
       );
 
       if (!mounted) return;
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Login successful.')));
-      } else {
-        setState(() {
-          _errorMessage = _getLoginErrorMessage(response.statusCode);
-        });
+      switch (session.role) {
+        case 'PATIENT':
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => PatientDashboardScreen(session: session),
+            ),
+          );
+          break;
+
+        case 'DOCTOR':
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(
+              builder: (_) => DoctorDashboardScreen(session: session),
+            ),
+          );
+          break;
+
+        default:
+          setState(() {
+            _errorMessage =
+                'Your account role is not supported in the mobile app. '
+                'Please use the web application.';
+          });
       }
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        switch (error.statusCode) {
+          case 400:
+            _errorMessage = 'Please check the information you entered.';
+            break;
+          case 401:
+            _errorMessage = 'Incorrect email or password.';
+            break;
+          case 403:
+            _errorMessage = error.message;
+            break;
+          case 429:
+            _errorMessage = 'Too many attempts. Please try again later.';
+            break;
+          default:
+            _errorMessage = error.statusCode >= 500
+                ? 'A server error occurred. Please try again.'
+                : error.message;
+        }
+      });
     } catch (_) {
       if (!mounted) return;
 

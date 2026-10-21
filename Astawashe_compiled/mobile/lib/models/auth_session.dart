@@ -11,6 +11,17 @@ class AuthSession {
 
   String get role => user['role'] as String? ?? '';
 
+  String get displayName {
+    final name = user['name'];
+    if (name is String && name.trim().isNotEmpty) {
+      return name.trim();
+    }
+
+    return user['email'] as String? ??
+        user['phone'] as String? ??
+        'AstaWashe user';
+  }
+
   factory AuthSession.fromJson(Map<String, dynamic> json) {
     final userData = json['user'];
     final tokensData = json['tokens'];
@@ -22,12 +33,14 @@ class AuthSession {
 
     final accessToken = tokensData['accessToken'];
     final refreshToken = tokensData['refreshToken'];
+    final role = userData['role'];
 
     if (accessToken is! String ||
         accessToken.isEmpty ||
         refreshToken is! String ||
         refreshToken.isEmpty ||
-        userData['role'] is! String) {
+        role is! String ||
+        role.isEmpty) {
       throw const FormatException('Missing authentication data.');
     }
 
