@@ -21,4 +21,27 @@ void main() {
 
     apiService.dispose();
   });
+
+  test('authenticated GET request includes the access token', () async {
+    final client = MockClient((request) async {
+      expect(request.method, 'GET');
+      expect(request.url.toString(), 'http://localhost:4000/api/patients/me');
+      expect(request.headers['Authorization'], 'Bearer test-access-token');
+      expect(request.headers['Accept'], 'application/json');
+
+      return http.Response('{"fullName":"Test Patient"}', 200);
+    });
+
+    final apiService = ApiService(client: client);
+
+    final response = await apiService.get(
+      'patients/me',
+      accessToken: 'test-access-token',
+    );
+
+    expect(response.statusCode, 200);
+    expect(response.body, '{"fullName":"Test Patient"}');
+
+    apiService.dispose();
+  });
 }
