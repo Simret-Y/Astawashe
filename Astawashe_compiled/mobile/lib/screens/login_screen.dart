@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../services/api_service.dart';
 import 'patient_dashboard_screen.dart';
 import 'doctor_dashboard_screen.dart';
+import 'register_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -129,6 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       size: 64,
                       color: Color(0xFF4169A1),
                     ),
+
                     const SizedBox(height: 20),
                     Text(
                       'Welcome back',
@@ -230,6 +232,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 style: TextStyle(fontSize: 16),
                               ),
                       ),
+                    ),
+
+                    TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const RegisterScreen(),
+                          ),
+                        );
+                      },
+                      child: const Text("Don't have an account? Create one"),
                     ),
                   ],
                 ),
