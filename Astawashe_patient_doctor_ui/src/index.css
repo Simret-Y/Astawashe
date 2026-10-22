@@ -1,0 +1,113 @@
+@import 'tailwindcss';
+
+/*
+ * AstaWashe design tokens.
+ * Derived from the existing brand (primary #13C5DD, secondary #354F8E,
+ * dark #1D2A4D, Jost). The bright cyan is kept for accents only; a deeper
+ * teal is used for text and buttons so they meet WCAG AA contrast on white.
+ */
+@theme {
+  --font-sans: 'Jost', ui-sans-serif, system-ui, 'Segoe UI', sans-serif;
+
+  --color-brand-50: #ecfbfd;
+  --color-brand-100: #d0f4f9;
+  --color-brand-200: #a3e8f2;
+  --color-brand-400: #13c5dd;
+  --color-brand-600: #0b8496;
+  --color-brand-700: #0a6b7a;
+  --color-brand-800: #0c5562;
+
+  --color-navy-50: #eef2f9;
+  --color-navy-100: #dbe3f2;
+  --color-navy-500: #354f8e;
+  --color-navy-700: #26386a;
+  --color-navy-900: #1d2a4d;
+
+  --color-canvas: #f4f7fa;
+
+  --color-taken: #047857;
+  --color-taken-bg: #e7f7ef;
+  --color-missed: #b91c1c;
+  --color-missed-bg: #fdecec;
+  --color-unconfirmed: #a14a05;
+  --color-unconfirmed-bg: #fff3e0;
+  --color-upcoming: #26386a;
+  --color-upcoming-bg: #eef2f9;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  @apply bg-canvas text-navy-900 antialiased;
+  font-family: var(--font-sans);
+}
+
+@layer base {
+  :focus-visible {
+    outline: 3px solid var(--color-brand-400);
+    outline-offset: 2px;
+  }
+}
+
+/* Patient "large text" preference. */
+.large-text {
+  font-size: 112.5%;
+}
+
+@utility btn {
+  @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+  min-height: 44px;
+}
+@utility btn-primary {
+  @apply btn bg-brand-700 text-white hover:bg-brand-800;
+}
+@utility btn-secondary {
+  @apply btn border border-navy-100 bg-white text-navy-700 hover:bg-navy-50;
+}
+@utility btn-ghost {
+  @apply btn text-navy-700 hover:bg-navy-50;
+}
+@utility btn-danger {
+  @apply btn border border-red-200 bg-white text-missed hover:bg-missed-bg;
+}
+@utility card {
+  @apply rounded-2xl border border-slate-200/80 bg-white;
+}
+@utility input {
+  @apply w-full rounded-xl border border-slate-300 bg-white px-3 text-navy-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-200;
+  min-height: 44px;
+}
+@utility label {
+  @apply mb-1 block text-sm font-medium text-navy-700;
+}
+
+@keyframes pulse-ring {
+  0% { transform: scale(0.9); opacity: 0.7; }
+  100% { transform: scale(1.6); opacity: 0; }
+}
+.pulse-ring::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: currentColor;
+  animation: pulse-ring 1.4s ease-out infinite;
+}
+
+@keyframes slide-up {
+  from { transform: translateY(8px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+.animate-slide-up {
+  animation: slide-up 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
