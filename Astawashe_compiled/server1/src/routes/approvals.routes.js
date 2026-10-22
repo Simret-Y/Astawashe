@@ -48,7 +48,7 @@ router.get("/hospital/doctors/pending", authRequired, requiredRoles.hospitalAdmi
 router.post("/hospital/doctors/:doctorId/approve", authRequired, requiredRoles.hospitalAdmin, asyncHandler(async (req, res) => {
   const { action, reason } = req.body;
   
-  if (!["APPROVE", "REJECT", "REQUEST_MORE_INFO"].includes(action)) {
+  if (!["APPROVE", "REJECT"].includes(action)) {
     return res.status(400).json({ success: false, message: "Invalid action" });
   }
 
@@ -106,7 +106,7 @@ router.get("/doctor/patients/pending", authRequired, requiredRoles.doctor, async
 router.post("/doctor/patients/:patientId/approve", authRequired, requiredRoles.doctor, asyncHandler(async (req, res) => {
   const { action, reason, nickname } = req.body;
   
-  if (!["APPROVE", "REJECT", "REQUEST_MORE_INFO"].includes(action)) {
+  if (!["APPROVE", "REJECT"].includes(action)) {
     return res.status(400).json({ success: false, message: "Invalid action" });
   }
 

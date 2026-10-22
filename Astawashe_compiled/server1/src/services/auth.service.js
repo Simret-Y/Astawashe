@@ -441,8 +441,46 @@ const loginUser = async (email, phone, password) => {
     throw error;
   }
 
-  return getUserWithProfileStatus(user);
+  
+  const userWithStatus = await getUserWithProfileStatus(user);
+
+  if (user.role === "PATIENT" && userWithStatus.status !== "ACTIVE") {
+    let message;
+
+    switch (userWithStatus.status) {
+      case "PENDING_DOCTOR_APPROVAL":
+        message =
+          "Your account is awaiting doctor approval. Please try again after your doctor approves it.";
+        break;
+
+      case "DOCTOR_APPROVED":
+        message =
+          "Your doctor has approved your registration, but your account is awaiting final System Admin activation.";
+        break;
+
+      case "REJECTED":
+        message =
+          "Your registration has been rejected. Please contact your doctor for more information.";
+        break;
+
+      case "SUSPENDED":
+        message =
+          "Your account is suspended. Please contact support.";
+        break;
+
+      default:
+        message =
+          "Your account is not yet active. Please wait until all required approvals are complete.";
+    }
+
+    const error = new Error(message);
+    error.status = 403;
+    throw error;
+  }
+
+  return userWithStatus;
 };
+
 
 const resendEmailVerification = async (email) => {
   const pending = await prisma.pendingRegistration.findUnique({ where: { email } });

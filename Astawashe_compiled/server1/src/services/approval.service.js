@@ -271,6 +271,7 @@ const getPendingDoctorApprovals = async (approvalLevel, userId) => {
 };
 
 // ========== PATIENT APPROVALS ==========
+
 const approvePatientDoctorLevel = async (patientId, doctorUserId, action, reason, nickname) => {
   const patient = await prisma.patientProfile.findUnique({
     where: { id: patientId }
@@ -282,18 +283,38 @@ const approvePatientDoctorLevel = async (patientId, doctorUserId, action, reason
     throw error;
   }
 
+  if (!["APPROVE", "REJECT"].includes(action)) {
+    const error = new Error("Invalid patient approval action");
+    error.status = 400;
+    throw error;
+  }
+
   if (patient.status !== "PENDING_DOCTOR_APPROVAL") {
     const error = new Error("Patient is not pending doctor approval");
     error.status = 400;
     throw error;
   }
 
-  let newStatus;
-  if (action === "APPROVE") {
-    newStatus = "DOCTOR_APPROVED";
-  } else if (action === "REJECT") {
-    newStatus = "REJECTED";
+  // Ensure this doctor is assigned to this patient.
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: doctorUserId },
+    select: { id: true }
+  });
+
+  if (!doctor || patient.doctorId !== doctor.id) {
+    const error = new Error("You are not authorized to approve this patient");
+    error.status = 403;
+    throw error;
   }
+
+  if (action === "APPROVE" && !nickname?.trim()) {
+    const error = new Error("Patient nickname is required for approval");
+    error.status = 400;
+    throw error;
+  }
+
+  const newStatus = action === "APPROVE" ? "DOCTOR_APPROVED" : "REJECTED";
+
 
   // Generate fallback nickname if none provided
   const finalNickname = nickname ? nickname.trim() : patient.nickname || `AST-${Math.floor(1000 + Math.random() * 9000)}`;
@@ -323,19 +344,40 @@ const approvePatientDoctorLevel = async (patientId, doctorUserId, action, reason
   // Log audit
   await safeAuditLog(doctorUserId, `PATIENT_DOCTOR_${action}`, "PATIENT", patientId, { reason, newStatus, nickname: finalNickname });
 
+  
   if (patient.userId) {
-    await createApprovalNotification(
-      patient.userId,
-      `Doctor Approval Complete`,
-      `Your doctor has approved your registration. Your account is now awaiting final System Admin activation.`,
-      patientId
-    );
+    if (action === "APPROVE") {
+      await createApprovalNotification(
+        patient.userId,
+        "Doctor Approval Complete",
+        "Your doctor has approved your registration. Your account is now awaiting final System Admin activation.",
+        patientId
+      );
+    } else if (action === "REJECT") {
+      const rejectionMessage = reason?.trim()
+        ? `Your doctor rejected your registration. Reason: ${reason.trim()}`
+        : "Your doctor rejected your registration. Please contact your doctor for more information.";
+
+      await createApprovalNotification(
+        patient.userId,
+        "Registration Update",
+        rejectionMessage,
+        patientId
+      );
+    }
   }
+
 
   return updated;
 };
 
-const approvePatientSystemLevel = async (patientId, systemAdminUserId, action, reason) => {
+
+const approvePatientSystemLevel = async (
+  patientId,
+  systemAdminUserId,
+  action,
+  reason
+) => {
   const patient = await prisma.patientProfile.findUnique({
     where: { id: patientId }
   });
@@ -346,18 +388,42 @@ const approvePatientSystemLevel = async (patientId, systemAdminUserId, action, r
     throw error;
   }
 
-  if (!["DOCTOR_APPROVED", "PENDING_DOCTOR_APPROVAL", "PENDING_SYSTEM_APPROVAL"].includes(patient.status)) {
-    const error = new Error("Patient is not in pending approval status");
+  if (!["APPROVE", "REJECT", "SUSPEND"].includes(action)) {
+    const error = new Error("Invalid action");
+    error.status = 400;
+    throw error;
+  }
+
+  // A patient must first be approved by their doctor.
+  if (
+    action !== "SUSPEND" &&
+    patient.status !== "DOCTOR_APPROVED"
+  ) {
+    const error = new Error(
+      "Patient must be approved by a doctor before System Admin review."
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    action === "SUSPEND" &&
+    !["DOCTOR_APPROVED", "ACTIVE"].includes(patient.status)
+  ) {
+    const error = new Error(
+      "Only doctor-approved or active patients can be suspended."
+    );
     error.status = 400;
     throw error;
   }
 
   let newStatus;
+
   if (action === "APPROVE") {
     newStatus = "ACTIVE";
   } else if (action === "REJECT") {
     newStatus = "REJECTED";
-  } else if (action === "SUSPEND") {
+  } else {
     newStatus = "SUSPENDED";
   }
 
@@ -378,20 +444,46 @@ const approvePatientSystemLevel = async (patientId, systemAdminUserId, action, r
     }
   });
 
-  // Log audit
-  await safeAuditLog(systemAdminUserId, `PATIENT_SYSTEM_${action}`, "PATIENT", patientId, { reason, newStatus });
+  await safeAuditLog(
+    systemAdminUserId,
+    `PATIENT_SYSTEM_${action}`,
+    "PATIENT",
+    patientId,
+    { reason, newStatus }
+  );
 
   if (patient.userId) {
-    await createApprovalNotification(
-      patient.userId,
-      `Account Activated`,
-      `Your AstaWashe patient account is now fully active! You can view medication schedules and track adherence.`,
-      patientId
-    );
+    if (action === "APPROVE") {
+      await createApprovalNotification(
+        patient.userId,
+        "Account Activated",
+        "Your AstaWashe patient account is now fully active! You can view medication schedules and track adherence.",
+        patientId
+      );
+    } else if (action === "REJECT") {
+      await createApprovalNotification(
+        patient.userId,
+        "Registration Update",
+        reason?.trim()
+          ? `Your registration was rejected by the System Admin. Reason: ${reason.trim()}`
+          : "Your registration was rejected by the System Admin.",
+        patientId
+      );
+    } else {
+      await createApprovalNotification(
+        patient.userId,
+        "Account Suspended",
+        reason?.trim()
+          ? `Your account has been suspended. Reason: ${reason.trim()}`
+          : "Your account has been suspended.",
+        patientId
+      );
+    }
   }
 
   return updated;
 };
+
 
 const getPendingPatientApprovals = async (approvalLevel, userId) => {
   const whereClause = {};

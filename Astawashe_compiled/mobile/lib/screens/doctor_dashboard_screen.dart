@@ -21,6 +21,8 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   String? _errorMessage;
   bool _isLoading = true;
 
+  final Set<String> _reviewingPatientIds = {};
+
   @override
   void initState() {
     super.initState();
@@ -171,6 +173,249 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     );
   }
 
+  Future<void> _showApproveDialog(Map<String, dynamic> patient) async {
+    final nicknameController = TextEditingController();
+    String? validationError;
+
+    try {
+      final nickname = await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Approve patient'),
+            content: TextField(
+              controller: nicknameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                labelText: 'Patient nickname',
+                hintText: 'e.g. AST-1234',
+                border: const OutlineInputBorder(),
+                errorText: validationError,
+              ),
+              onChanged: (_) {
+                if (validationError != null) {
+                  setDialogState(() => validationError = null);
+                }
+              },
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final value = nicknameController.text.trim();
+
+                  if (value.isEmpty) {
+                    setDialogState(() {
+                      validationError = 'Please enter a patient nickname';
+                    });
+                    return;
+                  }
+
+                  Navigator.pop(dialogContext, value);
+                },
+                child: const Text('Approve'),
+              ),
+            ],
+          ),
+        ),
+      );
+
+      if (nickname == null || !mounted) return;
+
+      await _submitPatientDecision(
+        patient: patient,
+        action: 'APPROVE',
+        nickname: nickname,
+      );
+    } finally {
+      nicknameController.dispose();
+    }
+  }
+
+  Future<void> _showRejectDialog(Map<String, dynamic> patient) async {
+    final reasonController = TextEditingController();
+
+    final reason = await showDialog<String>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Reject patient'),
+        content: TextField(
+          controller: reasonController,
+          autofocus: true,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            labelText: 'Reason (optional)',
+            hintText: 'Explain why the registration is rejected',
+            border: OutlineInputBorder(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () =>
+                Navigator.pop(dialogContext, reasonController.text.trim()),
+            style: FilledButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.error,
+              foregroundColor: Theme.of(context).colorScheme.onError,
+            ),
+            child: const Text('Reject patient'),
+          ),
+        ],
+      ),
+    );
+
+    reasonController.dispose();
+
+    if (reason == null || !mounted) return;
+
+    await _submitPatientDecision(
+      patient: patient,
+      action: 'REJECT',
+      reason: reason,
+    );
+  }
+
+  Future<void> _submitPatientDecision({
+    required Map<String, dynamic> patient,
+    required String action,
+    String? nickname,
+    String? reason,
+  }) async {
+    final patientId = patient['id']?.toString();
+
+    if (patientId == null || patientId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cannot review this patient: missing patient ID.'),
+        ),
+      );
+      return;
+    }
+
+    if (_reviewingPatientIds.contains(patientId)) return;
+
+    setState(() {
+      _reviewingPatientIds.add(patientId);
+    });
+
+    try {
+      final message = await _apiService.reviewPatientApproval(
+        accessToken: widget.session.accessToken,
+        patientId: patientId,
+        action: action,
+        nickname: nickname,
+        reason: reason,
+      );
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            message.isNotEmpty
+                ? message
+                : 'Patient ${action.toLowerCase()}d successfully.',
+          ),
+        ),
+      );
+
+      await _loadDashboard();
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(error.toString().replaceFirst('Exception: ', '')),
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _reviewingPatientIds.remove(patientId);
+        });
+      }
+    }
+  }
+
+  Widget _pendingPatientTile(Map<String, dynamic> patient) {
+    final name = _display(patient['fullName'], fallback: 'Unnamed patient');
+
+    final patientId = patient['id']?.toString() ?? '';
+    final isReviewing = _reviewingPatientIds.contains(patientId);
+
+    final email = patient['user'] is Map<String, dynamic>
+        ? patient['user']['email']?.toString()
+        : null;
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?'),
+              ),
+              title: Text(name),
+              subtitle: Text(
+                [
+                  if (email != null && email.isNotEmpty) email,
+                  if (patient['hospital'] is Map<String, dynamic>)
+                    (patient['hospital']['name']?.toString() ?? ''),
+                  'Awaiting doctor approval',
+                ].where((value) => value.isNotEmpty).join('\n'),
+              ),
+            ),
+            const SizedBox(height: 8),
+            if (isReviewing)
+              const Center(
+                child: Padding(
+                  padding: EdgeInsets.all(8),
+                  child: CircularProgressIndicator(),
+                ),
+              )
+            else
+              Row(
+                children: [
+                  Expanded(
+                    child: FilledButton.icon(
+                      onPressed: patientId.isEmpty
+                          ? null
+                          : () => _showApproveDialog(patient),
+                      icon: const Icon(Icons.check),
+                      label: const Text('Approve'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      onPressed: patientId.isEmpty
+                          ? null
+                          : () => _showRejectDialog(patient),
+                      icon: const Icon(Icons.close),
+                      label: const Text('Reject'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Theme.of(context).colorScheme.error,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDashboard() {
     final data = _dashboard!;
     final doctor = data['doctor'] as Map<String, dynamic>? ?? {};
@@ -262,9 +507,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               ),
             )
           else
-            ...patients.map(
-              (patient) => _patientTile(patient, showAdherence: true),
-            ),
+            ...pendingPatients.map(_patientTile),
           _sectionTitle('Patients needing attention (${riskPatients.length})'),
           if (riskPatients.isEmpty)
             const Card(
@@ -286,7 +529,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
           if (pendingPatients.isEmpty)
             const Card(child: ListTile(title: Text('No pending approvals')))
           else
-            ...pendingPatients.map(_patientTile),
+            ...pendingPatients.map(_pendingPatientTile),
         ],
       ),
     );
