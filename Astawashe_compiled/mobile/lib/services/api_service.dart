@@ -55,6 +55,22 @@ class ApiService {
     );
   }
 
+  Future<http.Response> post(
+    String path, {
+    required String accessToken,
+    required Map<String, dynamic> body,
+  }) {
+    return _client.post(
+      ApiConfig.endpoint(path),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(body),
+    );
+  }
+
   String _readErrorMessage(String body) {
     try {
       final decoded = jsonDecode(body);

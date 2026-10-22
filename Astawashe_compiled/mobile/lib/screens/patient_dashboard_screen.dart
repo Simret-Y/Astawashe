@@ -24,6 +24,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
   String? _errorMessage;
   bool _isLoading = true;
+  final Set<String> _submittingScheduleIds = {};
 
   @override
   void initState() {
@@ -51,6 +52,82 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     }
 
     return jsonDecode(response.body);
+  }
+
+  Future<void> _recordDose(Map<String, dynamic> schedule, String status) async {
+    final rawId = schedule['id'];
+
+    if (rawId == null || rawId.toString().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('This schedule has no valid ID.')),
+      );
+      return;
+    }
+
+    final scheduleId = rawId.toString();
+
+    if (_submittingScheduleIds.contains(scheduleId)) return;
+
+    setState(() {
+      _submittingScheduleIds.add(scheduleId);
+    });
+
+    try {
+      final response = await _apiService.post(
+        'adherence/record-dose',
+        accessToken: widget.session.accessToken,
+        body: {'scheduleId': scheduleId, 'status': status, 'method': 'APP'},
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        String message = 'Could not record this dose. Please try again.';
+
+        try {
+          final decoded = jsonDecode(response.body);
+          if (decoded is Map<String, dynamic> && decoded['message'] is String) {
+            message = decoded['message'] as String;
+          }
+        } catch (_) {
+          // Keep the fallback message for non-JSON responses.
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message)));
+        return;
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            status == 'TAKEN'
+                ? 'Dose marked as taken.'
+                : 'Dose marked as not taken.',
+          ),
+        ),
+      );
+
+      await _loadDashboard();
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Could not record dose: '
+            '${error.toString().replaceFirst('Exception: ', '')}',
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _submittingScheduleIds.remove(scheduleId);
+        });
+      }
+    }
   }
 
   Future<void> _loadDashboard() async {
@@ -381,16 +458,58 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                   ? medication['name']
                   : null;
 
+              final scheduleId = schedule['id']?.toString() ?? '';
+              final isSubmitting = _submittingScheduleIds.contains(scheduleId);
+
               return Card(
-                child: ListTile(
-                  leading: const Icon(Icons.alarm),
-                  title: Text(_display(medicationName, fallback: 'Medication')),
-                  subtitle: Text(
-                    '${_display(schedule['time'], fallback: 'Time not set')}'
-                    ' · ${_display(schedule['frequency'], fallback: 'Frequency not set')}'
-                    '\n${_display(schedule['dosage'], fallback: 'Dosage not set')}',
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        leading: const Icon(Icons.alarm),
+                        title: Text(
+                          _display(medicationName, fallback: 'Medication'),
+                        ),
+                        subtitle: Text(
+                          '${_display(schedule['time'], fallback: 'Time not set')}'
+                          ' · ${_display(schedule['frequency'], fallback: 'Frequency not set')}'
+                          '\n${_display(schedule['dosage'], fallback: 'Dosage not set')}',
+                        ),
+                        isThreeLine: true,
+                      ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => _recordDose(schedule, 'TAKEN'),
+                              icon: const Icon(Icons.check),
+                              label: const Text('Mark taken'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: isSubmitting
+                                  ? null
+                                  : () => _recordDose(schedule, 'NOT_TAKEN'),
+                              icon: const Icon(Icons.close),
+                              label: const Text('Not taken'),
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (isSubmitting) ...[
+                        const SizedBox(height: 12),
+                        const LinearProgressIndicator(),
+                      ],
+                    ],
                   ),
-                  isThreeLine: true,
                 ),
               );
             }),
