@@ -140,6 +140,51 @@ router.post("/record-dose", authRequired, asyncHandler(async (req, res) => {
     });
   }
 
+  
+  const schedule = await prisma.medicationSchedule.findUnique({
+    where: { id: scheduleId },
+    select: {
+      patientId: true,
+      doctorId: true
+    }
+  });
+
+  if (!schedule) {
+    return res.status(404).json({
+      success: false,
+      message: "Schedule not found"
+    });
+  }
+
+  if (schedule.patientId !== patientId) {
+    return res.status(403).json({
+      success: false,
+      message: "This schedule does not belong to this patient"
+    });
+  }
+
+  if (req.user.role === "DOCTOR") {
+    const doctor = await prisma.doctor.findUnique({
+      where: { userId: req.user.id },
+      select: { id: true }
+    });
+
+    if (!doctor) {
+      return res.status(404).json({
+        success: false,
+        message: "Doctor profile not found"
+      });
+    }
+
+    if (schedule.doctorId !== doctor.id) {
+      return res.status(403).json({
+        success: false,
+        message: "You are not authorized to record doses for this schedule"
+      });
+    }
+  }
+
+
   const doseLog = await adherenceService.recordDoseConfirmation(
     scheduleId,
     patientId,

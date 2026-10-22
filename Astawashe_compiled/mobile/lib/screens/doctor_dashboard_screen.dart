@@ -137,6 +137,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     bool showAdherence = false,
   }) {
     final name = _display(patient['fullName'], fallback: 'Unnamed patient');
+    final patientId = patient['id']?.toString();
 
     final nickname = patient['nickname'];
     final subtitleParts = <String>[];
@@ -158,19 +159,374 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     }
 
     return Card(
-      child: ListTile(
-        leading: CircleAvatar(
-          child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?'),
+      child: Padding(
+        padding: const EdgeInsets.all(12),
+        child: Column(
+          children: [
+            ListTile(
+              contentPadding: EdgeInsets.zero,
+              leading: CircleAvatar(
+                child: Text(name.isNotEmpty ? name[0].toUpperCase() : '?'),
+              ),
+              title: Text(name),
+              subtitle: Text(
+                subtitleParts.isEmpty
+                    ? 'Active patient'
+                    : subtitleParts.join('\n'),
+              ),
+              isThreeLine: subtitleParts.length > 1,
+            ),
+            Align(
+              alignment: Alignment.centerRight,
+              child: OutlinedButton.icon(
+                onPressed: patientId == null || patientId.isEmpty
+                    ? null
+                    : () => _showPrescribeDialog(patient),
+                icon: const Icon(Icons.medication_outlined),
+                label: const Text('Prescribe medication'),
+              ),
+            ),
+          ],
         ),
-        title: Text(name),
-        subtitle: Text(
-          subtitleParts.isEmpty
-              ? 'Awaiting doctor approval'
-              : subtitleParts.join('\n'),
-        ),
-        isThreeLine: subtitleParts.length > 1,
       ),
     );
+  }
+
+  Future<void> _showPrescribeDialog(Map<String, dynamic> patient) async {
+    final patientId = patient['id']?.toString();
+    final patientName = _display(
+      patient['fullName'],
+      fallback: 'Unnamed patient',
+    );
+
+    if (patientId == null || patientId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Patient ID is missing.')));
+      return;
+    }
+
+    final formKey = GlobalKey<FormState>();
+    final nameController = TextEditingController();
+    final dosageController = TextEditingController();
+    final doseController = TextEditingController();
+    final instructionsController = TextEditingController();
+    final timeController = TextEditingController(text: '08:00');
+    final startDateController = TextEditingController(
+      text: DateTime.now().toIso8601String().substring(0, 10),
+    );
+    final endDateController = TextEditingController();
+
+    String frequency = 'DAILY';
+    bool isSaving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Prescribe for $patientName'),
+            content: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        controller: nameController,
+                        decoration: const InputDecoration(
+                          labelText: 'Medication name *',
+                          hintText: 'Enter the prescribed medication',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Medication name is required'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: dosageController,
+                        decoration: const InputDecoration(
+                          labelText: 'Schedule dosage *',
+                          hintText: 'e.g. 1 tablet',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Dosage is required'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: doseController,
+                        decoration: const InputDecoration(
+                          labelText: 'Prescription dose *',
+                          hintText: 'e.g. 500 mg',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Dose is required'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: instructionsController,
+                        decoration: const InputDecoration(
+                          labelText: 'Instructions',
+                          hintText: 'e.g. Take after a meal',
+                        ),
+                        maxLines: 2,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: frequency,
+                        decoration: const InputDecoration(
+                          labelText: 'Frequency',
+                        ),
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'DAILY',
+                            child: Text('Daily'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'TWICE_DAILY',
+                            child: Text('Twice daily'),
+                          ),
+                          DropdownMenuItem(
+                            value: 'WEEKLY',
+                            child: Text('Weekly'),
+                          ),
+                        ],
+                        onChanged: isSaving
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setDialogState(() => frequency = value);
+                                }
+                              },
+                      ),
+                      TextFormField(
+                        controller: timeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Reminder time * (24-hour HH:MM)',
+                          hintText: '08:00',
+                        ),
+                        validator: (value) =>
+                            value == null ||
+                                !RegExp(
+                                  r'^([01]\d|2[0-3]):[0-5]\d$',
+                                ).hasMatch(value.trim())
+                            ? 'Enter a valid time, e.g. 08:00'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: startDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Start date * (YYYY-MM-DD)',
+                        ),
+                        validator: (value) =>
+                            value == null ||
+                                !RegExp(
+                                  r'^\d{4}-\d{2}-\d{2}$',
+                                ).hasMatch(value.trim()) ||
+                                DateTime.tryParse(value.trim()) == null
+                            ? 'Enter a valid start date'
+                            : null,
+                      ),
+                      TextFormField(
+                        controller: endDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'End date (optional, YYYY-MM-DD)',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return null;
+                          }
+                          if (!RegExp(
+                                r'^\d{4}-\d{2}-\d{2}$',
+                              ).hasMatch(value.trim()) ||
+                              DateTime.tryParse(value.trim()) == null) {
+                            return 'Enter a valid end date';
+                          }
+                          if (value.trim().compareTo(
+                                startDateController.text.trim(),
+                              ) <
+                              0) {
+                            return 'End date must not precede start date';
+                          }
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: isSaving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        setDialogState(() => isSaving = true);
+
+                        try {
+                          final startDate = startDateController.text.trim();
+                          final endDate = endDateController.text.trim();
+                          final instructions = instructionsController.text
+                              .trim();
+
+                          final medicationResponse = await _apiService.post(
+                            'medications/$patientId/medications',
+                            accessToken: widget.session.accessToken,
+                            body: {
+                              'name': nameController.text.trim(),
+                              'dosage': doseController.text.trim(),
+                              'instructions': instructions,
+                            },
+                          );
+
+                          if (medicationResponse.statusCode < 200 ||
+                              medicationResponse.statusCode >= 300) {
+                            throw Exception(
+                              _apiErrorMessage(
+                                medicationResponse.body,
+                                'Could not create medication',
+                              ),
+                            );
+                          }
+
+                          final medicationData =
+                              jsonDecode(medicationResponse.body)
+                                  as Map<String, dynamic>;
+                          final medication =
+                              medicationData['data'] as Map<String, dynamic>;
+                          final medicationId = medication['id']?.toString();
+
+                          if (medicationId == null || medicationId.isEmpty) {
+                            throw Exception(
+                              'The server did not return a medication ID.',
+                            );
+                          }
+
+                          final prescriptionResponse = await _apiService.post(
+                            'medications/$patientId/prescriptions',
+                            accessToken: widget.session.accessToken,
+                            body: {
+                              'medicationId': medicationId,
+                              'dose': doseController.text.trim(),
+                              'frequency': frequency,
+                              'startDate': startDate,
+                              if (endDate.isNotEmpty) 'endDate': endDate,
+                              'instructions': instructions,
+                            },
+                          );
+
+                          if (prescriptionResponse.statusCode < 200 ||
+                              prescriptionResponse.statusCode >= 300) {
+                            throw Exception(
+                              'Medication saved, but prescription creation failed: '
+                              '${_apiErrorMessage(prescriptionResponse.body, 'Request failed')} '
+                              'Please retry after checking the patient medication list.',
+                            );
+                          }
+
+                          final prescriptionData =
+                              jsonDecode(prescriptionResponse.body)
+                                  as Map<String, dynamic>;
+                          final prescription =
+                              prescriptionData['data'] as Map<String, dynamic>;
+                          final prescriptionId = prescription['id']?.toString();
+
+                          final scheduleResponse = await _apiService.post(
+                            'medications/$patientId/schedules',
+                            accessToken: widget.session.accessToken,
+                            body: {
+                              'medicationId': medicationId,
+                              'prescriptionId': prescriptionId,
+                              'dosage': dosageController.text.trim(),
+                              'time': timeController.text.trim(),
+                              'frequency': 'DAILY',
+                              'startDate': startDate,
+                              if (endDate.isNotEmpty) 'endDate': endDate,
+                            },
+                          );
+
+                          if (scheduleResponse.statusCode < 200 ||
+                              scheduleResponse.statusCode >= 300) {
+                            throw Exception(
+                              'Medication and prescription were saved, but schedule creation failed: '
+                              '${_apiErrorMessage(scheduleResponse.body, 'Request failed')} '
+                              'Please check the medication before retrying.',
+                            );
+                          }
+
+                          if (!dialogContext.mounted) return;
+                          Navigator.pop(dialogContext);
+
+                          if (!mounted) return;
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Medication, prescription, and schedule created.',
+                              ),
+                            ),
+                          );
+
+                          await _loadDashboard();
+                        } catch (error) {
+                          if (!dialogContext.mounted) return;
+                          setDialogState(() => isSaving = false);
+
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                error.toString().replaceFirst(
+                                  'Exception: ',
+                                  '',
+                                ),
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: isSaving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save prescription'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      nameController.dispose();
+      dosageController.dispose();
+      doseController.dispose();
+      instructionsController.dispose();
+      timeController.dispose();
+      startDateController.dispose();
+      endDateController.dispose();
+    }
+  }
+
+  String _apiErrorMessage(String body, String fallback) {
+    try {
+      final decoded = jsonDecode(body);
+      if (decoded is Map<String, dynamic>) {
+        return decoded['message']?.toString() ?? fallback;
+      }
+    } catch (_) {
+      // Use the fallback when the response is not JSON.
+    }
+    return fallback;
   }
 
   Future<void> _showApproveDialog(Map<String, dynamic> patient) async {
@@ -507,7 +863,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               ),
             )
           else
-            ...pendingPatients.map(_patientTile),
+            ...patients.map(_patientTile),
           _sectionTitle('Patients needing attention (${riskPatients.length})'),
           if (riskPatients.isEmpty)
             const Card(

@@ -591,49 +591,6 @@ router.get(
         },
       });
 
-    if (todaySchedules.length === 0) {
-      let docId = patient.doctorId;
-      if (!docId) {
-        const defaultDoc = await prisma.doctor.findFirst({ where: { status: "ACTIVE" } });
-        if (defaultDoc) docId = defaultDoc.id;
-      }
-
-      if (docId) {
-        const med = await prisma.medication.create({
-          data: {
-            patientId: patient.id,
-            doctorId: docId,
-            name: "Metformin 500mg",
-            dosage: "500mg",
-            form: "Tablet",
-            instructions: "Take 1 tablet daily after breakfast",
-            isActive: true
-          }
-        });
-
-        await prisma.medicationSchedule.create({
-          data: {
-            patientId: patient.id,
-            doctorId: docId,
-            medicationId: med.id,
-            dosage: "500mg",
-            time: "08:00 AM",
-            frequency: "DAILY",
-            startDate: new Date(),
-            isActive: true
-          }
-        });
-
-        todaySchedules = await prisma.medicationSchedule.findMany({
-          where: { patientId: patient.id, isActive: true },
-          include: {
-            medication: true,
-            doseLogs: { where: { scheduledDate: today } }
-          }
-        });
-      }
-    }
-
     const todayAdherence =
       await prisma.adherenceLog.findUnique({
         where: {

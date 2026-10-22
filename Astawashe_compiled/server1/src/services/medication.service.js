@@ -1,25 +1,66 @@
 const prisma = require("../db/prisma");
 
+// Verify that the logged-in doctor owns the patient relationship.
+const verifyDoctorPatient = async (patientId, userId) => {
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId },
+  });
+
+  if (!doctor) {
+    const error = new Error("Doctor profile not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const patient = await prisma.patientProfile.findFirst({
+    where: {
+      id: patientId,
+      doctorId: doctor.id,
+      status: "ACTIVE",
+    },
+  });
+
+  if (!patient) {
+    const error = new Error(
+      "You can prescribe medication only to your own active patients"
+    );
+    error.status = 403;
+    throw error;
+  }
+
+  return { doctor, patient };
+};
+
 // Create medication
 const createMedication = async (patientId, doctorId, data) => {
-  let docId = doctorId;
-  const docObj = await prisma.doctor.findFirst({ where: { OR: [{ id: doctorId }, { userId: doctorId }] } });
-  if (docObj) docId = docObj.id;
+  if (!patientId) {
+    const error = new Error("Patient ID is required");
+    error.status = 400;
+    throw error;
+  }
+
+  const { doctor } = await verifyDoctorPatient(patientId, doctorId);
+
+  if (!data.name?.trim() || !data.dosage?.trim()) {
+    const error = new Error("Medication name and dosage are required");
+    error.status = 400;
+    throw error;
+  }
 
   const medication = await prisma.medication.create({
     data: {
       patientId,
-      doctorId: docId,
-      name: data.name,
+      doctorId: doctor.id,
+      name: data.name.trim(),
       genericName: data.genericName,
-      dosage: data.dosage,
+      dosage: data.dosage.trim(),
       strength: data.strength,
       form: data.form,
       manufacturer: data.manufacturer,
       instructions: data.instructions,
       notes: data.notes,
-      isActive: true
-    }
+      isActive: true,
+    },
   });
 
   await prisma.auditLog.create({
@@ -28,8 +69,11 @@ const createMedication = async (patientId, doctorId, data) => {
       action: "CREATE_MEDICATION",
       entityType: "MEDICATION",
       entityId: medication.id,
-      metadata: { patientId, medicationName: medication.name }
-    }
+      metadata: {
+        patientId,
+        medicationName: medication.name,
+      },
+    },
   });
 
   return medication;
@@ -92,30 +136,58 @@ const deactivateMedication = async (medicationId) => {
 
 // Create prescription
 const createPrescription = async (patientId, doctorId, medicationId, data) => {
-  const medication = await prisma.medication.findUnique({
-    where: { id: medicationId }
+  const { doctor } = await verifyDoctorPatient(patientId, doctorId);
+
+  const medication = await prisma.medication.findFirst({
+    where: {
+      id: medicationId,
+      patientId,
+      doctorId: doctor.id,
+      isActive: true,
+    },
   });
 
   if (!medication) {
-    const error = new Error("Medication not found");
+    const error = new Error(
+      "Medication not found for this patient"
+    );
     error.status = 404;
     throw error;
   }
 
-  const prescription = await prisma.prescription.create({
+  if (!data.dose?.trim() || !data.frequency?.trim() || !data.startDate) {
+    const error = new Error(
+      "Dose, frequency, and start date are required"
+    );
+    error.status = 400;
+    throw error;
+  }
+
+  const startDate = new Date(data.startDate);
+  const endDate = data.endDate ? new Date(data.endDate) : null;
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    (endDate && Number.isNaN(endDate.getTime())) ||
+    (endDate && endDate < startDate)
+  ) {
+    const error = new Error("Invalid prescription dates");
+    error.status = 400;
+    throw error;
+  }
+
+  return prisma.prescription.create({
     data: {
       patientId,
-      doctorId,
+      doctorId: doctor.id,
       medicationId,
-      dose: data.dose,
-      frequency: data.frequency,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
-      instructions: data.instructions
-    }
+      dose: data.dose.trim(),
+      frequency: data.frequency.trim(),
+      startDate,
+      endDate,
+      instructions: data.instructions,
+    },
   });
-
-  return prescription;
 };
 
 // List prescriptions
@@ -128,51 +200,110 @@ const getPrescriptions = async (patientId) => {
 };
 
 // Create medication schedule
-const createMedicationSchedule = async (patientId, doctorId, medicationId, data) => {
-  let docId = doctorId;
-  const docObj = await prisma.doctor.findFirst({ where: { OR: [{ id: doctorId }, { userId: doctorId }] } });
-  if (docObj) docId = docObj.id;
+const createMedicationSchedule = async (
+  patientId,
+  doctorId,
+  medicationId,
+  data
+) => {
+  const { doctor } = await verifyDoctorPatient(patientId, doctorId);
 
-  const medication = await prisma.medication.findUnique({
-    where: { id: medicationId }
+  const medication = await prisma.medication.findFirst({
+    where: {
+      id: medicationId,
+      patientId,
+      doctorId: doctor.id,
+      isActive: true,
+    },
   });
 
   if (!medication) {
-    const error = new Error("Medication not found");
+    const error = new Error(
+      "Medication not found for this patient"
+    );
     error.status = 404;
     throw error;
   }
 
-  const schedule = await prisma.medicationSchedule.create({
-    data: {
-      patientId,
-      doctorId: docId,
-      medicationId,
-      prescriptionId: data.prescriptionId,
-      dosage: data.dosage,
-      time: data.time, // HH:MM format
-      frequency: data.frequency,
-      specificDays: data.specificDays ? JSON.stringify(data.specificDays) : null,
-      customInterval: data.customInterval,
-      startDate: new Date(data.startDate),
-      endDate: data.endDate ? new Date(data.endDate) : null,
-      isActive: true
-    }
-  });
+  if (
+    !data.dosage?.trim() ||
+    !data.time ||
+    !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.time) ||
+    !data.frequency?.trim() ||
+    !data.startDate
+  ) {
+    const error = new Error(
+      "Valid dosage, time (HH:MM), frequency, and start date are required"
+    );
+    error.status = 400;
+    throw error;
+  }
 
-  // Create associated reminders
-  await prisma.reminder.create({
-    data: {
-      patientId,
-      scheduleId: schedule.id,
-      type: "MEDICATION",
-      title: `${medication.name} - ${data.dosage}`,
-      channel: data.channel || "VOICE",
-      isActive: true
-    }
-  });
+  const startDate = new Date(data.startDate);
+  const endDate = data.endDate ? new Date(data.endDate) : null;
 
-  return schedule;
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    (endDate && Number.isNaN(endDate.getTime())) ||
+    (endDate && endDate < startDate)
+  ) {
+    const error = new Error("Invalid schedule dates");
+    error.status = 400;
+    throw error;
+  }
+
+  if (data.prescriptionId) {
+    const prescription = await prisma.prescription.findFirst({
+      where: {
+        id: data.prescriptionId,
+        patientId,
+        doctorId: doctor.id,
+        medicationId,
+      },
+    });
+
+    if (!prescription) {
+      const error = new Error(
+        "Prescription does not belong to this patient and medication"
+      );
+      error.status = 400;
+      throw error;
+    }
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const schedule = await tx.medicationSchedule.create({
+      data: {
+        patientId,
+        doctorId: doctor.id,
+        medicationId,
+        prescriptionId: data.prescriptionId || null,
+        dosage: data.dosage.trim(),
+        time: data.time,
+        frequency: data.frequency,
+        specificDays: data.specificDays
+          ? JSON.stringify(data.specificDays)
+          : null,
+        customInterval: data.customInterval,
+        startDate,
+        endDate,
+        isActive: true,
+      },
+    });
+
+    await tx.reminder.create({
+      data: {
+        patientId,
+        scheduleId: schedule.id,
+        type: "MEDICATION",
+        title: `${medication.name} - ${data.dosage.trim()}`,
+        channel: data.channel || "VOICE",
+        isActive: true,
+      },
+    });
+
+    return schedule;
+  });
 };
 
 // Get medication schedules for patient

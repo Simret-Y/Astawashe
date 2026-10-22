@@ -12,6 +12,14 @@ const recordDoseConfirmation = async (scheduleId, patientId, status, method, voi
     throw error;
   }
 
+  
+  if (schedule.patientId !== patientId) {
+    const error = new Error("This medication schedule does not belong to this patient");
+    error.status = 403;
+    throw error;
+  }
+
+
   // Get today's date in UTC
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
