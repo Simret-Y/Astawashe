@@ -118,92 +118,131 @@ const updateDailyAdherence = async (patientId) => {
 };
 
 // Check for 3 consecutive missed doses for a specific schedule
+
+
 const checkThreeMissedDoses = async (scheduleId, patientId) => {
-  const schedule = await prisma.medicationSchedule.findUnique({
-    where: { id: scheduleId },
-    include: {
-      medication: true,
-      patient: {
-        include: {
-          guardians: {
-            include: { guardian: true }
+  await prisma.$transaction(async (tx) => {
+    // Serialize alert checks for this schedule.
+    // The lock is automatically released when the transaction ends.
+    await tx.$queryRaw`
+  SELECT pg_advisory_xact_lock(hashtext(${scheduleId}))
+`;
+
+    const schedule = await tx.medicationSchedule.findUnique({
+      where: { id: scheduleId },
+      include: {
+        medication: true,
+        patient: {
+          include: {
+            guardians: {
+              include: { guardian: true }
+            },
+            assignedDoctor: {
+              select: { id: true, name: true, userId: true }
+            }
+          }
+        }
+      }
+    });
+
+    if (!schedule || schedule.patientId !== patientId) return;
+
+    const recentDoses = await tx.doseLog.findMany({
+      where: { scheduleId },
+      orderBy: { scheduledDate: "desc" },
+      take: 3
+    });
+
+    if (recentDoses.length !== 3) return;
+
+    const allMissed = recentDoses.every(
+      dose => dose.status === "MISSED" || dose.status === "NOT_TAKEN"
+    );
+
+    if (!allMissed) return;
+
+    const triggerDoseDate = recentDoses[0].scheduledDate.toISOString();
+
+    // Recheck after obtaining the lock.
+    const existingAudit = await tx.auditLog.findFirst({
+      where: {
+        action: "THREE_CONSECUTIVE_MISSES_DETECTED",
+        entityType: "PATIENT",
+        entityId: patientId,
+        AND: [
+          {
+            metadata: {
+              path: ["scheduleId"],
+              equals: scheduleId
+            }
           },
-          assignedDoctor: { select: { id: true, name: true, userId: true } }
-        }
-      }
-    }
-  });
-
-  if (!schedule) return;
-
-  // Get last 3 dose logs for this schedule
-  const recentDoses = await prisma.doseLog.findMany({
-    where: { scheduleId },
-    orderBy: { scheduledDate: "desc" },
-    take: 3
-  });
-
-  // Check if all 3 are missed
-  if (recentDoses.length === 3) {
-    const allMissed = recentDoses.every(d => d.status === "MISSED" || d.status === "NOT_TAKEN");
-
-    if (allMissed) {
-      // Create guardian alerts
-      if (schedule.patient.guardians && schedule.patient.guardians.length > 0) {
-        for (const guardianLink of schedule.patient.guardians) {
-          await prisma.guardianAlert.create({
-            data: {
-              guardianId: guardianLink.guardianId,
-              patientId,
-              patientNickname: schedule.patient.nickname || "Patient",
-              alertType: "THREE_MISSED_DOSES",
-              message: `Patient ${schedule.patient.nickname || schedule.patient.fullName} has missed 3 consecutive doses of ${schedule.medication.name}`,
-              doseCount: 3
+          {
+            metadata: {
+              path: ["triggerDoseDate"],
+              equals: triggerDoseDate
             }
-          });
-
-          // Notify guardian
-          await prisma.notification.create({
-            data: {
-              userId: guardianLink.guardian.userId,
-              title: "Medication Alert",
-              message: `Three consecutive missed doses detected for patient ${schedule.patient.nickname}`,
-              notificationType: "ALERT",
-              relatedId: patientId
-            }
-          });
-        }
-      }
-
-      // Create doctor alert
-      if (schedule.patient.assignedDoctor) {
-        await prisma.notification.create({
-          data: {
-            userId: schedule.patient.assignedDoctor.userId,
-            title: "High Risk Patient Alert",
-            message: `Patient ${schedule.patient.nickname || schedule.patient.fullName} has missed 3 consecutive doses`,
-            notificationType: "ALERT",
-            relatedId: patientId
           }
-        });
+        ]
       }
+    });
 
-      // Log audit
-      await prisma.auditLog.create({
+    if (existingAudit) return;
+
+    const patientName =
+      schedule.patient.nickname || schedule.patient.fullName;
+
+    for (const guardianLink of schedule.patient.guardians || []) {
+      await tx.guardianAlert.create({
         data: {
-          action: "THREE_CONSECUTIVE_MISSES_DETECTED",
-          entityType: "PATIENT",
-          entityId: patientId,
-          metadata: {
-            scheduleId,
-            medicationName: schedule.medication.name,
-            patientNickname: schedule.patient.nickname
-          }
+          guardianId: guardianLink.guardianId,
+          patientId,
+          patientNickname: schedule.patient.nickname || "Patient",
+          alertType: "THREE_MISSED_DOSES",
+          message: `Patient ${patientName} has missed 3 consecutive doses of ${schedule.medication.name}`,
+          doseCount: 3
+        }
+      });
+
+      await tx.notification.create({
+        data: {
+          userId: guardianLink.guardian.userId,
+          title: "Medication Alert",
+          message: `Three consecutive missed doses detected for patient ${patientName}`,
+          notificationType: "ALERT",
+          relatedId: patientId
         }
       });
     }
-  }
+
+    if (schedule.patient.assignedDoctor) {
+      await tx.notification.create({
+        data: {
+          userId: schedule.patient.assignedDoctor.userId,
+          title: "High Risk Patient Alert",
+          message: `Patient ${patientName} has missed 3 consecutive doses`,
+          notificationType: "ALERT",
+          relatedId: patientId
+        }
+      });
+    }
+
+    await tx.auditLog.create({
+      data: {
+        action: "THREE_CONSECUTIVE_MISSES_DETECTED",
+        entityType: "PATIENT",
+        entityId: patientId,
+        metadata: {
+          scheduleId,
+          medicationName: schedule.medication.name,
+          patientNickname: schedule.patient.nickname,
+          triggerDoseDate
+        }
+      }
+    });
+  });
 };
+
+
 
 // Calculate adherence for a date range
 const calculateAdherance = async (patientId, startDate, endDate) => {

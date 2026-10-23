@@ -627,14 +627,15 @@ model NotificationDelivery {
 }
 
 model AuditLog {
-  id         String   @id @default(cuid())
-  actor      String?
-  action     String
-  entityType String
-  entityId   String?
-  metadata   Json?
-  createdAt  DateTime @default(now())
-  user       User?    @relation(fields: [actor], references: [id])
+  id               String   @id @default(cuid())
+  actor            String?
+  action           String
+  entityType       String
+  entityId         String?
+  metadata         Json?
+  deduplicationKey String?  @unique
+  createdAt        DateTime @default(now())
+  user             User?    @relation(fields: [actor], references: [id])
 
   @@index([actor])
   @@index([action])
