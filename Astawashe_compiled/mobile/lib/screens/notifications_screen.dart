@@ -5,8 +5,14 @@ import '../models/auth_session.dart';
 
 class NotificationsScreen extends StatefulWidget {
   final AuthSession session;
+  final Future<void> Function(Map<String, dynamic> notification)?
+  onOpenNotification;
 
-  const NotificationsScreen({super.key, required this.session});
+  const NotificationsScreen({
+    super.key,
+    required this.session,
+    this.onOpenNotification,
+  });
 
   @override
   State<NotificationsScreen> createState() => _NotificationsScreenState();
@@ -95,6 +101,22 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     }
   }
 
+  Future<void> _openNotification(Map<String, dynamic> notification) async {
+    final relatedId = notification['relatedId']?.toString();
+
+    if (notification['readAt'] == null) {
+      await _markAsRead(notification);
+    }
+
+    if (!mounted) return;
+
+    if (relatedId != null &&
+        relatedId.isNotEmpty &&
+        widget.onOpenNotification != null) {
+      await widget.onOpenNotification!(notification);
+    }
+  }
+
   IconData _notificationIcon(Map<String, dynamic> notification) {
     final type =
         (notification['notificationType'] ?? notification['type'] ?? '')
@@ -118,6 +140,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
     return Card(
       margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
       child: ListTile(
+        onTap: () => _openNotification(notification),
         leading: CircleAvatar(
           backgroundColor: isRead
               ? Colors.grey.shade200

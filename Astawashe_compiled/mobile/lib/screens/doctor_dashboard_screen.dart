@@ -289,47 +289,42 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         context: context,
         builder: (dialogContext) => AlertDialog(
           title: Text(
-            'Schedules — ${_display(patient['fullName'], fallback: 'Patient')}',
+            '${patient['nickname'] ?? patient['fullName'] ?? 'Patient'}'
+            ' — Medication Schedules',
           ),
           content: SizedBox(
             width: 500,
             child: schedules.isEmpty
-                ? const Text('This patient has no active medication schedules.')
-                : ConstrainedBox(
-                    constraints: const BoxConstraints(maxHeight: 450),
-                    child: ListView.separated(
-                      shrinkWrap: true,
-                      itemCount: schedules.length,
-                      separatorBuilder: (_, _) => const Divider(),
-                      itemBuilder: (context, index) {
-                        final schedule = schedules[index];
+                ? const Text('No medication schedules found.')
+                : SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: schedules.map((schedule) {
                         final medication =
-                            schedule['medication'] is Map<String, dynamic>
-                            ? schedule['medication'] as Map<String, dynamic>
-                            : <String, dynamic>{};
+                            schedule['medication'] as Map<String, dynamic>?;
+
+                        final medicationName =
+                            medication?['name']?.toString() ?? 'Medication';
 
                         return ListTile(
                           contentPadding: EdgeInsets.zero,
-                          title: Text(
-                            medication['name']?.toString() ??
-                                'Unnamed medication',
-                          ),
+                          title: Text(medicationName),
                           subtitle: Text(
-                            'Dosage: ${schedule['dosage'] ?? '—'}\n'
-                            'Time: ${schedule['time'] ?? '—'}\n'
-                            'Frequency: ${schedule['frequency'] ?? '—'}',
+                            'Dosage: ${schedule['dosage'] ?? 'Not specified'}\n'
+                            'Time: ${schedule['time'] ?? 'Not specified'}\n'
+                            'Frequency: ${schedule['frequency'] ?? 'Not specified'}',
                           ),
                           isThreeLine: true,
                           trailing: IconButton(
                             tooltip: 'Edit schedule',
                             icon: const Icon(Icons.edit_outlined),
-                            onPressed: () {
+                            onPressed: () async {
                               Navigator.of(dialogContext).pop();
-                              _showEditScheduleDialog(patient, schedule);
+                              await _showEditScheduleDialog(patient, schedule);
                             },
                           ),
                         );
-                      },
+                      }).toList(),
                     ),
                   ),
           ),
@@ -1607,7 +1602,63 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
-                  builder: (_) => NotificationsScreen(session: widget.session),
+                  builder: (_) => NotificationsScreen(
+                    session: widget.session,
+                    onOpenNotification: (notification) async {
+                      final relatedId = notification['relatedId']?.toString();
+
+                      if (relatedId == null || relatedId.isEmpty) {
+                        return;
+                      }
+
+                      final patients = (_dashboard?['patients'] as List?) ?? [];
+
+                      final patient = patients
+                          .cast<Map<String, dynamic>>()
+                          .where((item) => item['id']?.toString() == relatedId)
+                          .firstOrNull;
+
+                      if (!mounted) return;
+
+                      if (patient == null) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text(
+                              'Patient details are not available in the dashboard.',
+                            ),
+                          ),
+                        );
+                        return;
+                      }
+
+                      Navigator.pop(context);
+
+                      await showDialog<void>(
+                        context: context,
+                        builder: (dialogContext) {
+                          final patientName =
+                              patient['nickname'] ??
+                              patient['fullName'] ??
+                              'Patient';
+
+                          return AlertDialog(
+                            title: Text(patientName.toString()),
+                            content: const Text(
+                              'This patient has a notification requiring attention. '
+                              'Return to the dashboard to review their medication '
+                              'schedules and adherence information.',
+                            ),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(dialogContext),
+                                child: const Text('Close'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
                 ),
               );
             },
