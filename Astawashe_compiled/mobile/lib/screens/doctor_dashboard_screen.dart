@@ -20,6 +20,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   Map<String, dynamic>? _dashboard;
   String? _errorMessage;
   bool _isLoading = true;
+  final TextEditingController _patientSearchController =
+      TextEditingController();
+  String _patientSearchQuery = '';
 
   final Set<String> _reviewingPatientIds = {};
 
@@ -92,7 +95,9 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   }
 
   @override
+  @override
   void dispose() {
+    _patientSearchController.dispose();
     _apiService.dispose();
     super.dispose();
   }
@@ -853,17 +858,70 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             ),
           ),
           _sectionTitle('Active patients (${patients.length})'),
-          if (patients.isEmpty)
-            const Card(
-              child: ListTile(
-                title: Text('No active patients yet'),
-                subtitle: Text(
-                  'Active patients assigned to you will appear here.',
-                ),
-              ),
-            )
-          else
-            ...patients.map(_patientTile),
+
+          TextField(
+            controller: _patientSearchController,
+            decoration: InputDecoration(
+              labelText: 'Search patients',
+              hintText: 'Search by name or nickname',
+              prefixIcon: const Icon(Icons.search),
+              suffixIcon: _patientSearchQuery.isEmpty
+                  ? null
+                  : IconButton(
+                      tooltip: 'Clear search',
+                      icon: const Icon(Icons.clear),
+                      onPressed: () {
+                        _patientSearchController.clear();
+                        setState(() => _patientSearchQuery = '');
+                      },
+                    ),
+              border: const OutlineInputBorder(),
+            ),
+            onChanged: (value) {
+              setState(() => _patientSearchQuery = value.trim());
+            },
+          ),
+
+          const SizedBox(height: 8),
+
+          Builder(
+            builder: (context) {
+              final query = _patientSearchQuery.toLowerCase();
+
+              final filteredPatients = patients.where((patient) {
+                final name = (patient['fullName'] ?? '')
+                    .toString()
+                    .toLowerCase();
+                final nickname = (patient['nickname'] ?? '')
+                    .toString()
+                    .toLowerCase();
+
+                return name.contains(query) || nickname.contains(query);
+              }).toList();
+
+              if (filteredPatients.isEmpty) {
+                return Card(
+                  child: ListTile(
+                    leading: const Icon(Icons.person_search),
+                    title: Text(
+                      patients.isEmpty
+                          ? 'No active patients yet'
+                          : 'No matching patients',
+                    ),
+                    subtitle: Text(
+                      patients.isEmpty
+                          ? 'Active patients assigned to you will appear here.'
+                          : 'Try a different name or nickname.',
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                children: filteredPatients.map(_patientTile).toList(),
+              );
+            },
+          ),
           _sectionTitle('Patients needing attention (${riskPatients.length})'),
           if (riskPatients.isEmpty)
             const Card(

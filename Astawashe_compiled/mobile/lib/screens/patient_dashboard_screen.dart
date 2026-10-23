@@ -631,10 +631,6 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                             ),
                           ],
                         ),
-                        if (isSubmitting) ...[
-                          const SizedBox(height: 12),
-                          const LinearProgressIndicator(),
-                        ],
                       ],
                       if (isSubmitting) ...[
                         const SizedBox(height: 12),
