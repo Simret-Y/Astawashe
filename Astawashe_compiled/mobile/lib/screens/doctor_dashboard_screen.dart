@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 
 import '../models/auth_session.dart';
 import '../services/api_service.dart';
+import 'notifications_screen.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
   final AuthSession session;
@@ -1600,6 +1601,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                 '${_display(data['averageAdherence'], fallback: '0.0')}%',
               ),
             ),
+          ),
+          const SizedBox(height: 12),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => NotificationsScreen(session: widget.session),
+                ),
+              );
+            },
+            icon: const Icon(Icons.notifications_outlined),
+            label: const Text('Notifications'),
           ),
           _sectionTitle('Active patients (${patients.length})'),
           TextField(

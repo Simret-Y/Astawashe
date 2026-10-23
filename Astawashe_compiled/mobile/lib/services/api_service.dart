@@ -464,6 +464,45 @@ class ApiService {
     return decoded['data'] as Map<String, dynamic>;
   }
 
+  Future<List<Map<String, dynamic>>> getNotifications({
+    required String accessToken,
+  }) async {
+    final response = await get('notifications', accessToken: accessToken);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! List) {
+      throw const FormatException('Invalid notifications response.');
+    }
+
+    return decoded.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<void> markNotificationRead({
+    required String notificationId,
+    required String accessToken,
+  }) async {
+    final response = await patch(
+      'notifications/${Uri.encodeComponent(notificationId)}/read',
+      accessToken: accessToken,
+      body: {},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+  }
+
   void dispose() {
     _client.close();
   }
