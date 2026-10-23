@@ -319,6 +319,27 @@ const getPatientSchedules = async (patientId) => {
   });
 };
 
+
+const getDoctorPatientSchedules = async (patientId, doctorUserId) => {
+  const { doctor } = await verifyDoctorPatient(patientId, doctorUserId);
+
+  return prisma.medicationSchedule.findMany({
+    where: {
+      patientId,
+      doctorId: doctor.id,
+      isActive: true,
+    },
+    include: {
+      medication: true,
+      reminders: {
+        where: { isActive: true },
+      },
+    },
+    orderBy: [{ startDate: "desc" }, { time: "asc" }],
+  });
+};
+
+
 // Get schedule by ID
 const getScheduleById = async (scheduleId) => {
   const schedule = await prisma.medicationSchedule.findUnique({
@@ -340,19 +361,151 @@ const getScheduleById = async (scheduleId) => {
 };
 
 // Update schedule
-const updateSchedule = async (scheduleId, data) => {
-  return prisma.medicationSchedule.update({
-    where: { id: scheduleId },
-    data: {
-      dosage: data.dosage,
-      time: data.time,
-      frequency: data.frequency,
-      specificDays: data.specificDays ? JSON.stringify(data.specificDays) : undefined,
-      customInterval: data.customInterval,
-      endDate: data.endDate ? new Date(data.endDate) : null
+
+const updateSchedule = async (scheduleId, doctorUserId, data) => {
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: doctorUserId },
+  });
+
+  if (!doctor) {
+    const error = new Error("Doctor profile not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const existing = await prisma.medicationSchedule.findFirst({
+    where: {
+      id: scheduleId,
+      doctorId: doctor.id,
+    },
+    include: {
+      medication: true,
+    },
+  });
+
+  if (!existing) {
+    const error = new Error(
+      "Schedule not found or you do not have permission to update it"
+    );
+    error.status = 404;
+    throw error;
+  }
+
+  // Validate only fields included in the PATCH request.
+  if (
+    data.dosage !== undefined &&
+    (typeof data.dosage !== "string" || !data.dosage.trim())
+  ) {
+    const error = new Error("Dosage cannot be empty");
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    data.time !== undefined &&
+    (typeof data.time !== "string" ||
+      !/^([01]\d|2[0-3]):[0-5]\d$/.test(data.time))
+  ) {
+    const error = new Error("Enter a valid time in HH:MM format");
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    data.frequency !== undefined &&
+    (typeof data.frequency !== "string" || !data.frequency.trim())
+  ) {
+    const error = new Error("Frequency cannot be empty");
+    error.status = 400;
+    throw error;
+  }
+
+  const startDate =
+    data.startDate !== undefined
+      ? new Date(data.startDate)
+      : existing.startDate;
+
+  const endDate =
+    data.endDate === undefined
+      ? existing.endDate
+      : data.endDate === null || data.endDate === ""
+        ? null
+        : new Date(data.endDate);
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    (endDate !== null && Number.isNaN(endDate.getTime()))
+  ) {
+    const error = new Error("Enter valid schedule dates");
+    error.status = 400;
+    throw error;
+  }
+
+  if (endDate && endDate < startDate) {
+    const error = new Error("End date must not precede start date");
+    error.status = 400;
+    throw error;
+  }
+
+  const updateData = {};
+
+  if (data.dosage !== undefined) {
+    updateData.dosage = data.dosage.trim();
+  }
+
+  if (data.time !== undefined) {
+    updateData.time = data.time;
+  }
+
+  if (data.frequency !== undefined) {
+    updateData.frequency = data.frequency.trim();
+  }
+
+  if (data.startDate !== undefined) {
+    updateData.startDate = startDate;
+  }
+
+  if (data.endDate !== undefined) {
+    updateData.endDate = endDate;
+  }
+
+  if (data.specificDays !== undefined) {
+    updateData.specificDays =
+      data.specificDays === null
+        ? null
+        : JSON.stringify(data.specificDays);
+  }
+
+  if (data.customInterval !== undefined) {
+    updateData.customInterval = data.customInterval;
+  }
+
+  return prisma.$transaction(async (tx) => {
+    const schedule = await tx.medicationSchedule.update({
+      where: { id: existing.id },
+      data: updateData,
+    });
+
+    // Keep the existing medication reminder's title in sync with dosage.
+    if (
+      data.dosage !== undefined &&
+      data.dosage.trim() !== existing.dosage
+    ) {
+      await tx.reminder.updateMany({
+        where: {
+          scheduleId: existing.id,
+          isActive: true,
+        },
+        data: {
+          title: `${existing.medication.name} - ${data.dosage.trim()}`,
+        },
+      });
     }
+
+    return schedule;
   });
 };
+
 
 // Deactivate schedule
 const deactivateSchedule = async (scheduleId) => {
@@ -372,6 +525,7 @@ module.exports = {
   getPrescriptions,
   createMedicationSchedule,
   getPatientSchedules,
+  getDoctorPatientSchedules,
   getScheduleById,
   updateSchedule,
   deactivateSchedule

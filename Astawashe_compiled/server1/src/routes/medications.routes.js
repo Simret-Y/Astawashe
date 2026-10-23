@@ -58,10 +58,21 @@ router.post("/by-medication/:medicationId/schedules", authRequired, requiredRole
 }));
 
 // Doctor updates schedule
-router.patch("/schedules/:scheduleId", authRequired, requiredRoles.doctor, asyncHandler(async (req, res) => {
-  const schedule = await medService.updateSchedule(req.params.scheduleId, req.body);
-  res.json({ success: true, data: schedule });
-}));
+
+router.patch(
+  "/schedules/:scheduleId",
+  authRequired,
+  requiredRoles.doctor,
+  asyncHandler(async (req, res) => {
+    const schedule = await medService.updateSchedule(
+      req.params.scheduleId,
+      req.user.id,
+      req.body
+    );
+
+    res.json({ success: true, data: schedule });
+  })
+);
 
 // Doctor deactivates schedule
 router.delete("/schedules/:scheduleId", authRequired, requiredRoles.doctor, asyncHandler(async (req, res) => {
@@ -97,6 +108,21 @@ router.get("/my/schedules", authRequired, requiredRoles.patient, asyncHandler(as
   const schedules = await medService.getPatientSchedules(patient.id);
   res.json({ success: true, data: schedules });
 }));
+
+router.get(
+  "/:patientId/schedules",
+  authRequired,
+  requiredRoles.doctor,
+  asyncHandler(async (req, res) => {
+    const schedules = await medService.getDoctorPatientSchedules(
+      req.params.patientId,
+      req.user.id
+    );
+
+    res.json({ success: true, data: schedules });
+  })
+);
+
 
 // Patient gets prescription list
 router.get("/my/prescriptions", authRequired, requiredRoles.patient, asyncHandler(async (req, res) => {

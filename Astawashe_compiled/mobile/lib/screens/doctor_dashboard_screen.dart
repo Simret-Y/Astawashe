@@ -95,7 +95,6 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   }
 
   @override
-  @override
   void dispose() {
     _patientSearchController.dispose();
     _apiService.dispose();
@@ -183,18 +182,380 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             ),
             Align(
               alignment: Alignment.centerRight,
-              child: OutlinedButton.icon(
-                onPressed: patientId == null || patientId.isEmpty
-                    ? null
-                    : () => _showPrescribeDialog(patient),
-                icon: const Icon(Icons.medication_outlined),
-                label: const Text('Prescribe medication'),
+
+              child: Wrap(
+                spacing: 8,
+                alignment: WrapAlignment.end,
+                children: [
+                  OutlinedButton.icon(
+                    onPressed: patientId == null || patientId.isEmpty
+                        ? null
+                        : () => _showPrescribeDialog(patient),
+                    icon: const Icon(Icons.medication_outlined),
+                    label: const Text('Prescribe medication'),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: patientId == null || patientId.isEmpty
+                        ? null
+                        : () => _showPatientSchedules(patient),
+                    icon: const Icon(Icons.edit_calendar_outlined),
+                    label: const Text('Edit schedules'),
+                  ),
+                ],
               ),
             ),
           ],
         ),
       ),
     );
+  }
+
+  Future<void> _showPatientSchedules(Map<String, dynamic> patient) async {
+    final patientId = patient['id']?.toString();
+
+    if (patientId == null || patientId.isEmpty) return;
+
+    try {
+      final response = await _apiService.getPatientSchedulesForDoctor(
+        patientId: patientId,
+        accessToken: widget.session.accessToken,
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        final decoded = jsonDecode(response.body);
+        final message = decoded is Map<String, dynamic>
+            ? (decoded['message'] ??
+                  decoded['error'] ??
+                  'Could not load schedules.')
+            : 'Could not load schedules.';
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(message.toString())));
+        return;
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is! Map<String, dynamic> || decoded['data'] is! List) {
+        throw const FormatException('Invalid schedules response.');
+      }
+
+      final schedules = (decoded['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            'Schedules — ${_display(patient['fullName'], fallback: 'Patient')}',
+          ),
+          content: SizedBox(
+            width: 500,
+            child: schedules.isEmpty
+                ? const Text('This patient has no active medication schedules.')
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 450),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: schedules.length,
+                      separatorBuilder: (_, _) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final schedule = schedules[index];
+                        final medication =
+                            schedule['medication'] is Map<String, dynamic>
+                            ? schedule['medication'] as Map<String, dynamic>
+                            : <String, dynamic>{};
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            medication['name']?.toString() ??
+                                'Unnamed medication',
+                          ),
+                          subtitle: Text(
+                            'Dosage: ${schedule['dosage'] ?? '—'}\n'
+                            'Time: ${schedule['time'] ?? '—'}\n'
+                            'Frequency: ${schedule['frequency'] ?? '—'}',
+                          ),
+                          isThreeLine: true,
+                          trailing: IconButton(
+                            tooltip: 'Edit schedule',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () {
+                              Navigator.of(dialogContext).pop();
+                              _showEditScheduleDialog(patient, schedule);
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load schedules: $error')),
+      );
+    }
+  }
+
+  Future<void> _showEditScheduleDialog(
+    Map<String, dynamic> patient,
+    Map<String, dynamic> schedule,
+  ) async {
+    final formKey = GlobalKey<FormState>();
+
+    final dosageController = TextEditingController(
+      text: schedule['dosage']?.toString() ?? '',
+    );
+    final timeController = TextEditingController(
+      text: schedule['time']?.toString() ?? '',
+    );
+    final startDateController = TextEditingController(
+      text: schedule['startDate']?.toString().split('T').first ?? '',
+    );
+    final endDateController = TextEditingController(
+      text: schedule['endDate'] == null
+          ? ''
+          : schedule['endDate'].toString().split('T').first,
+    );
+
+    final allowedFrequencies = ['DAILY', 'TWICE_DAILY', 'WEEKLY'];
+
+    final initialFrequency = schedule['frequency']?.toString() ?? 'DAILY';
+
+    String frequency = allowedFrequencies.contains(initialFrequency)
+        ? initialFrequency
+        : 'DAILY';
+
+    bool saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Edit medication schedule'),
+            content: SizedBox(
+              width: 450,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        initialValue:
+                            (schedule['medication']
+                                    as Map<String, dynamic>?)?['name']
+                                ?.toString() ??
+                            'Medication',
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Medication',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: dosageController,
+                        decoration: const InputDecoration(
+                          labelText: 'Schedule dosage',
+                          hintText: 'e.g. 1 tablet',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter the dosage.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: timeController,
+                        decoration: const InputDecoration(
+                          labelText: 'Time',
+                          hintText: 'HH:mm',
+                          helperText:
+                              'Use the time format expected by the backend.',
+                        ),
+                        validator: (value) {
+                          if (value == null || value.trim().isEmpty) {
+                            return 'Enter a time.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: frequency,
+                        decoration: const InputDecoration(
+                          labelText: 'Frequency',
+                        ),
+                        items: allowedFrequencies
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value.replaceAll('_', ' ')),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: saving
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setDialogState(() => frequency = value);
+                                }
+                              },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: startDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Start date',
+                          hintText: 'YYYY-MM-DD',
+                        ),
+                        validator: (value) {
+                          final date = value?.trim() ?? '';
+                          if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date)) {
+                            return 'Use YYYY-MM-DD.';
+                          }
+                          if (DateTime.tryParse(date) == null) {
+                            return 'Enter a valid date.';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: endDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'End date (optional)',
+                          hintText: 'YYYY-MM-DD',
+                        ),
+                        validator: (value) {
+                          final date = value?.trim() ?? '';
+                          if (date.isEmpty) return null;
+
+                          if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
+                              DateTime.tryParse(date) == null) {
+                            return 'Enter a valid date in YYYY-MM-DD format.';
+                          }
+
+                          final start = DateTime.tryParse(
+                            startDateController.text.trim(),
+                          );
+                          final end = DateTime.tryParse(date);
+
+                          if (start != null &&
+                              end != null &&
+                              end.isBefore(start)) {
+                            return 'End date cannot be before start date.';
+                          }
+
+                          return null;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        setDialogState(() => saving = true);
+
+                        try {
+                          await _apiService.updateMedicationSchedule(
+                            scheduleId: schedule['id'].toString(),
+                            accessToken: widget.session.accessToken,
+                            body: {
+                              'dosage': dosageController.text.trim(),
+                              'time': timeController.text.trim(),
+                              'frequency': frequency,
+                              'startDate': startDateController.text.trim(),
+                              'endDate': endDateController.text.trim().isEmpty
+                                  ? null
+                                  : endDateController.text.trim(),
+                            },
+                          );
+
+                          if (!mounted || !dialogContext.mounted) return;
+
+                          Navigator.of(dialogContext).pop();
+
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Schedule updated successfully.'),
+                            ),
+                          );
+
+                          await _loadDashboard();
+                          await _showPatientSchedules(patient);
+                        } catch (error) {
+                          if (!dialogContext.mounted) return;
+
+                          setDialogState(() => saving = false);
+
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Could not update schedule: $error',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save changes'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      dosageController.dispose();
+      timeController.dispose();
+      startDateController.dispose();
+      endDateController.dispose();
+    }
   }
 
   Future<void> _showPrescribeDialog(Map<String, dynamic> patient) async {

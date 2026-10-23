@@ -71,6 +71,22 @@ class ApiService {
     );
   }
 
+  Future<http.Response> patch(
+    String path, {
+    required String accessToken,
+    required Map<String, dynamic> body,
+  }) {
+    return _client.patch(
+      ApiConfig.endpoint(path),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode(body),
+    );
+  }
+
   String _readErrorMessage(String body) {
     try {
       final decoded = jsonDecode(body);
@@ -305,6 +321,41 @@ class ApiService {
     }
 
     return 'Patient ${action.toLowerCase()}d successfully.';
+  }
+
+  Future<dynamic> getPatientSchedulesForDoctor({
+    required String patientId,
+    required String accessToken,
+  }) async {
+    return get('medications/$patientId/schedules', accessToken: accessToken);
+  }
+
+  Future<Map<String, dynamic>> updateMedicationSchedule({
+    required String scheduleId,
+    required String accessToken,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await patch(
+      'medications/schedules/${Uri.encodeComponent(scheduleId)}',
+      accessToken: accessToken,
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic> ||
+        decoded['data'] is! Map<String, dynamic>) {
+      throw const FormatException('Invalid schedule update response.');
+    }
+
+    return decoded['data'] as Map<String, dynamic>;
   }
 
   void dispose() {
