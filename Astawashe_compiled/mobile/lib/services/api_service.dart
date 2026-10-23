@@ -355,6 +355,59 @@ class ApiService {
     return (decoded['data'] as List).whereType<Map<String, dynamic>>().toList();
   }
 
+  Future<List<Map<String, dynamic>>> getDoctorAdherenceSummary({
+    required String accessToken,
+  }) async {
+    final response = await get(
+      'adherence/doctor/summary',
+      accessToken: accessToken,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic> ||
+        decoded['success'] != true ||
+        decoded['data'] is! List) {
+      throw const FormatException('Invalid doctor adherence summary response.');
+    }
+
+    return (decoded['data'] as List).whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<Map<String, dynamic>> getDoctorPatientAdherence({
+    required String patientId,
+    required String accessToken,
+  }) async {
+    final response = await get(
+      'adherence/doctor/patients/${Uri.encodeComponent(patientId)}',
+      accessToken: accessToken,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic> ||
+        decoded['success'] != true ||
+        decoded['data'] is! Map<String, dynamic>) {
+      throw const FormatException('Invalid patient adherence response.');
+    }
+
+    return decoded['data'] as Map<String, dynamic>;
+  }
+
   Future<Map<String, dynamic>> updateMedicationSchedule({
     required String scheduleId,
     required String accessToken,

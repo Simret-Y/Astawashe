@@ -17,9 +17,12 @@ class DoctorDashboardScreen extends StatefulWidget {
 class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
   late final ApiService _apiService;
 
+  List<Map<String, dynamic>> _adherenceSummary = [];
+
   Map<String, dynamic>? _dashboard;
   String? _errorMessage;
   bool _isLoading = true;
+
   final TextEditingController _patientSearchController =
       TextEditingController();
   String _patientSearchQuery = '';
@@ -76,10 +79,25 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         throw const FormatException('Invalid doctor dashboard response.');
       }
 
+      final dashboardData = decoded['data'] as Map<String, dynamic>;
+
+      // Load additional adherence risk information separately.
+      // A failure here must not prevent the main dashboard from loading.
+      List<Map<String, dynamic>> adherenceSummary = [];
+
+      try {
+        adherenceSummary = await _apiService.getDoctorAdherenceSummary(
+          accessToken: widget.session.accessToken,
+        );
+      } catch (error) {
+        debugPrint('Could not load adherence summary: $error');
+      }
+
       if (!mounted) return;
 
       setState(() {
-        _dashboard = decoded['data'] as Map<String, dynamic>;
+        _dashboard = dashboardData;
+        _adherenceSummary = adherenceSummary;
         _isLoading = false;
       });
     } catch (error) {
@@ -105,6 +123,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
     if (value == null || value.toString().trim().isEmpty) {
       return fallback;
     }
+
     return value.toString();
   }
 
@@ -155,6 +174,12 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         'Adherence today: ${_display(patient['adherenceToday'], fallback: '0')}%',
       );
       subtitleParts.add(
+        'Risk level: ${_display(patient['riskLevel'], fallback: 'UNKNOWN')}',
+      );
+      subtitleParts.add(
+        'Consecutive missed doses: ${_display(patient['consecutiveMisses'], fallback: '0')}',
+      );
+      subtitleParts.add(
         'Active medication schedules: ${_display(patient['medicationCount'], fallback: '0')}',
       );
       subtitleParts.add(
@@ -180,35 +205,40 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               ),
               isThreeLine: subtitleParts.length > 1,
             ),
-            Align(
-              alignment: Alignment.centerRight,
 
-              child: Wrap(
-                spacing: 8,
-                alignment: WrapAlignment.end,
-                children: [
-                  OutlinedButton.icon(
-                    onPressed: patientId == null || patientId.isEmpty
-                        ? null
-                        : () => _showPrescribeDialog(patient),
-                    icon: const Icon(Icons.medication_outlined),
-                    label: const Text('Prescribe medication'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: () => _showPatientPrescriptions(patient),
-                    icon: const Icon(Icons.medication_outlined),
-                    label: const Text('View prescriptions'),
-                  ),
-                  OutlinedButton.icon(
-                    onPressed: patientId == null || patientId.isEmpty
-                        ? null
-                        : () => _showPatientSchedules(patient),
-                    icon: const Icon(Icons.edit_calendar_outlined),
-                    label: const Text('Edit schedules'),
-                  ),
-                ],
+            // Medication actions appear only in Active patients.
+            if (!showAdherence)
+              Align(
+                alignment: Alignment.centerRight,
+                child: Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  alignment: WrapAlignment.end,
+                  children: [
+                    OutlinedButton.icon(
+                      onPressed: patientId == null || patientId.isEmpty
+                          ? null
+                          : () => _showPrescribeDialog(patient),
+                      icon: const Icon(Icons.medication_outlined),
+                      label: const Text('Prescribe medication'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: patientId == null || patientId.isEmpty
+                          ? null
+                          : () => _showPatientPrescriptions(patient),
+                      icon: const Icon(Icons.medication_outlined),
+                      label: const Text('View prescriptions'),
+                    ),
+                    OutlinedButton.icon(
+                      onPressed: patientId == null || patientId.isEmpty
+                          ? null
+                          : () => _showPatientSchedules(patient),
+                      icon: const Icon(Icons.edit_calendar_outlined),
+                      label: const Text('Edit schedules'),
+                    ),
+                  ],
+                ),
               ),
-            ),
           ],
         ),
       ),
@@ -1489,6 +1519,26 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
         .whereType<Map<String, dynamic>>()
         .toList();
 
+    final adherenceByPatientId = {
+      for (final item in _adherenceSummary)
+        if (item['patientId'] != null) item['patientId'].toString(): item,
+    };
+
+    Map<String, dynamic> enrichPatient(Map<String, dynamic> patient) {
+      final summary = adherenceByPatientId[patient['id']?.toString()];
+
+      return {
+        ...patient,
+        if (summary != null) 'riskLevel': summary['riskLevel'],
+        if (summary != null) 'consecutiveMisses': summary['consecutiveMisses'],
+        if (summary != null && summary['todayAdherence'] != null)
+          'adherenceToday': summary['todayAdherence'],
+      };
+    }
+
+    final enrichedPatients = patients.map(enrichPatient).toList();
+    final enrichedRiskPatients = riskPatients.map(enrichPatient).toList();
+
     return RefreshIndicator(
       onRefresh: _loadDashboard,
       child: ListView(
@@ -1552,7 +1602,6 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             ),
           ),
           _sectionTitle('Active patients (${patients.length})'),
-
           TextField(
             controller: _patientSearchController,
             decoration: InputDecoration(
@@ -1575,14 +1624,12 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               setState(() => _patientSearchQuery = value.trim());
             },
           ),
-
           const SizedBox(height: 8),
-
           Builder(
             builder: (context) {
               final query = _patientSearchQuery.toLowerCase();
 
-              final filteredPatients = patients.where((patient) {
+              final filteredPatients = enrichedPatients.where((patient) {
                 final name = (patient['fullName'] ?? '')
                     .toString()
                     .toLowerCase();
@@ -1628,7 +1675,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
               ),
             )
           else
-            ...riskPatients.map(
+            ...enrichedRiskPatients.map(
               (patient) => _patientTile(patient, showAdherence: true),
             ),
           _sectionTitle(
