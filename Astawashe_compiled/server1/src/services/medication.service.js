@@ -190,6 +190,117 @@ const createPrescription = async (patientId, doctorId, medicationId, data) => {
   });
 };
 
+
+const updatePrescription = async (prescriptionId, doctorUserId, data) => {
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: doctorUserId },
+  });
+
+  if (!doctor) {
+    const error = new Error("Doctor profile not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const existing = await prisma.prescription.findFirst({
+    where: {
+      id: prescriptionId,
+      doctorId: doctor.id,
+    },
+  });
+
+  if (!existing) {
+    const error = new Error(
+      "Prescription not found or you do not have permission to update it"
+    );
+    error.status = 404;
+    throw error;
+  }
+
+  if (
+    data.dose !== undefined &&
+    (typeof data.dose !== "string" || !data.dose.trim())
+  ) {
+    const error = new Error("Dose cannot be empty");
+    error.status = 400;
+    throw error;
+  }
+
+  if (
+    data.frequency !== undefined &&
+    (typeof data.frequency !== "string" || !data.frequency.trim())
+  ) {
+    const error = new Error("Frequency cannot be empty");
+    error.status = 400;
+    throw error;
+  }
+
+  const startDate =
+    data.startDate !== undefined
+      ? new Date(data.startDate)
+      : existing.startDate;
+
+  const endDate =
+    data.endDate === undefined
+      ? existing.endDate
+      : data.endDate === null || data.endDate === ""
+        ? null
+        : new Date(data.endDate);
+
+  if (
+    Number.isNaN(startDate.getTime()) ||
+    (endDate !== null && Number.isNaN(endDate.getTime()))
+  ) {
+    const error = new Error("Enter valid prescription dates");
+    error.status = 400;
+    throw error;
+  }
+
+  if (endDate && endDate < startDate) {
+    const error = new Error("End date must not precede start date");
+    error.status = 400;
+    throw error;
+  }
+
+  const updateData = {};
+
+  if (data.dose !== undefined) {
+    updateData.dose = data.dose.trim();
+  }
+
+  if (data.frequency !== undefined) {
+    updateData.frequency = data.frequency.trim();
+  }
+
+  if (data.startDate !== undefined) {
+    updateData.startDate = startDate;
+  }
+
+  if (data.endDate !== undefined) {
+    updateData.endDate = endDate;
+  }
+
+  if (data.instructions !== undefined) {
+    if (
+      data.instructions !== null &&
+      typeof data.instructions !== "string"
+    ) {
+      const error = new Error("Instructions must be text");
+      error.status = 400;
+      throw error;
+    }
+
+    updateData.instructions = data.instructions;
+  }
+
+  return prisma.prescription.update({
+    where: { id: existing.id },
+    data: updateData,
+    include: { medication: true },
+  });
+};
+
+
 // List prescriptions
 const getPrescriptions = async (patientId) => {
   return prisma.prescription.findMany({
@@ -522,11 +633,13 @@ module.exports = {
   updateMedication,
   deactivateMedication,
   createPrescription,
+  updatePrescription,
   getPrescriptions,
   createMedicationSchedule,
   getPatientSchedules,
   getDoctorPatientSchedules,
   getScheduleById,
   updateSchedule,
+  verifyDoctorPatient,
   deactivateSchedule
 };

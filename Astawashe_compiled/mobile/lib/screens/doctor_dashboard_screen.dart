@@ -195,6 +195,11 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                     label: const Text('Prescribe medication'),
                   ),
                   OutlinedButton.icon(
+                    onPressed: () => _showPatientPrescriptions(patient),
+                    icon: const Icon(Icons.medication_outlined),
+                    label: const Text('View prescriptions'),
+                  ),
+                  OutlinedButton.icon(
                     onPressed: patientId == null || patientId.isEmpty
                         ? null
                         : () => _showPatientSchedules(patient),
@@ -317,6 +322,334 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not load schedules: $error')),
       );
+    }
+  }
+
+  Future<void> _showPatientPrescriptions(Map<String, dynamic> patient) async {
+    final patientId = patient['id']?.toString();
+
+    if (patientId == null || patientId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Patient ID is missing.')));
+      return;
+    }
+
+    try {
+      final prescriptions = await _apiService.getPatientPrescriptionsForDoctor(
+        patientId: patientId,
+        accessToken: widget.session.accessToken,
+      );
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: Text(
+            'Prescriptions — ${_display(patient['fullName'], fallback: 'Patient')}',
+          ),
+          content: SizedBox(
+            width: 500,
+            child: prescriptions.isEmpty
+                ? const Text('No prescriptions found for this patient.')
+                : ConstrainedBox(
+                    constraints: const BoxConstraints(maxHeight: 450),
+                    child: ListView.separated(
+                      shrinkWrap: true,
+                      itemCount: prescriptions.length,
+                      separatorBuilder: (_, _) => const Divider(),
+                      itemBuilder: (context, index) {
+                        final prescription = prescriptions[index];
+                        final medication =
+                            prescription['medication'] is Map<String, dynamic>
+                            ? prescription['medication'] as Map<String, dynamic>
+                            : <String, dynamic>{};
+
+                        return ListTile(
+                          contentPadding: EdgeInsets.zero,
+                          title: Text(
+                            medication['name']?.toString() ?? 'Medication',
+                          ),
+                          subtitle: Text(
+                            'Dose: ${prescription['dose'] ?? '—'}\n'
+                            'Frequency: ${prescription['frequency'] ?? '—'}\n'
+                            'Start: ${prescription['startDate']?.toString().split('T').first ?? '—'}\n'
+                            'End: ${prescription['endDate']?.toString().split('T').first ?? 'Not set'}\n'
+                            'Instructions: ${prescription['instructions'] ?? 'None'}',
+                          ),
+                          trailing: IconButton(
+                            tooltip: 'Edit prescription',
+                            icon: const Icon(Icons.edit_outlined),
+                            onPressed: () async {
+                              Navigator.pop(dialogContext);
+                              await _showEditPrescriptionDialog(
+                                prescription,
+                                patient,
+                              );
+                            },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Close'),
+            ),
+          ],
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load prescriptions: $error')),
+      );
+    }
+  }
+
+  Future<void> _showEditPrescriptionDialog(
+    Map<String, dynamic> prescription,
+    Map<String, dynamic> patient,
+  ) async {
+    final prescriptionId = prescription['id']?.toString();
+
+    if (prescriptionId == null || prescriptionId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Prescription ID is missing.')),
+      );
+      return;
+    }
+
+    final formKey = GlobalKey<FormState>();
+
+    final doseController = TextEditingController(
+      text: prescription['dose']?.toString() ?? '',
+    );
+    final startDateController = TextEditingController(
+      text: prescription['startDate']?.toString().split('T').first ?? '',
+    );
+    final endDateController = TextEditingController(
+      text: prescription['endDate']?.toString().split('T').first ?? '',
+    );
+    final instructionsController = TextEditingController(
+      text: prescription['instructions']?.toString() ?? '',
+    );
+
+    const allowedFrequencies = ['DAILY', 'TWICE_DAILY', 'WEEKLY'];
+    final currentFrequency = prescription['frequency']?.toString() ?? 'DAILY';
+
+    String frequency = allowedFrequencies.contains(currentFrequency)
+        ? currentFrequency
+        : 'DAILY';
+
+    bool saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: const Text('Edit prescription'),
+            content: SizedBox(
+              width: 450,
+              child: SingleChildScrollView(
+                child: Form(
+                  key: formKey,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      TextFormField(
+                        initialValue:
+                            (prescription['medication']
+                                    as Map<String, dynamic>?)?['name']
+                                ?.toString() ??
+                            'Medication',
+                        readOnly: true,
+                        decoration: const InputDecoration(
+                          labelText: 'Medication',
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: doseController,
+                        decoration: const InputDecoration(
+                          labelText: 'Prescription dose',
+                          hintText: 'e.g. 500 mg',
+                        ),
+                        validator: (value) =>
+                            value == null || value.trim().isEmpty
+                            ? 'Enter the prescription dose.'
+                            : null,
+                      ),
+                      const SizedBox(height: 12),
+                      DropdownButtonFormField<String>(
+                        initialValue: frequency,
+                        decoration: const InputDecoration(
+                          labelText: 'Frequency',
+                        ),
+                        items: allowedFrequencies
+                            .map(
+                              (value) => DropdownMenuItem(
+                                value: value,
+                                child: Text(value.replaceAll('_', ' ')),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: saving
+                            ? null
+                            : (value) {
+                                if (value != null) {
+                                  setDialogState(() => frequency = value);
+                                }
+                              },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: startDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'Start date',
+                          hintText: 'YYYY-MM-DD',
+                        ),
+                        validator: (value) {
+                          final date = value?.trim() ?? '';
+
+                          if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
+                              DateTime.tryParse(date) == null) {
+                            return 'Enter a valid date (YYYY-MM-DD).';
+                          }
+
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: endDateController,
+                        decoration: const InputDecoration(
+                          labelText: 'End date (optional)',
+                          hintText: 'YYYY-MM-DD',
+                        ),
+                        validator: (value) {
+                          final date = value?.trim() ?? '';
+
+                          if (date.isEmpty) return null;
+
+                          if (!RegExp(r'^\d{4}-\d{2}-\d{2}$').hasMatch(date) ||
+                              DateTime.tryParse(date) == null) {
+                            return 'Enter a valid date (YYYY-MM-DD).';
+                          }
+
+                          final start = DateTime.tryParse(
+                            startDateController.text.trim(),
+                          );
+                          final end = DateTime.tryParse(date);
+
+                          if (start != null &&
+                              end != null &&
+                              end.isBefore(start)) {
+                            return 'End date cannot be before start date.';
+                          }
+
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: instructionsController,
+                        maxLines: 3,
+                        decoration: const InputDecoration(
+                          labelText: 'Instructions',
+                          hintText: 'e.g. Take after a meal',
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving ? null : () => Navigator.pop(dialogContext),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        if (!formKey.currentState!.validate()) return;
+
+                        setDialogState(() => saving = true);
+
+                        try {
+                          await _apiService.updatePrescription(
+                            prescriptionId: prescriptionId,
+                            accessToken: widget.session.accessToken,
+                            body: {
+                              'dose': doseController.text.trim(),
+                              'frequency': frequency,
+                              'startDate': startDateController.text.trim(),
+                              'endDate': endDateController.text.trim().isEmpty
+                                  ? null
+                                  : endDateController.text.trim(),
+                              'instructions': instructionsController.text
+                                  .trim(),
+                            },
+                          );
+
+                          if (!mounted || !dialogContext.mounted) return;
+
+                          Navigator.pop(dialogContext);
+
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Prescription updated successfully.',
+                              ),
+                            ),
+                          );
+
+                          await _showPatientPrescriptions(patient);
+                        } catch (error) {
+                          if (!dialogContext.mounted) return;
+
+                          setDialogState(() => saving = false);
+
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Could not update prescription: $error',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save changes'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      doseController.dispose();
+      startDateController.dispose();
+      endDateController.dispose();
+      instructionsController.dispose();
     }
   }
 
@@ -751,7 +1084,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                             accessToken: widget.session.accessToken,
                             body: {
                               'name': nameController.text.trim(),
-                              'dosage': doseController.text.trim(),
+                              'dosage': dosageController.text.trim(),
                               'instructions': instructions,
                             },
                           );

@@ -35,6 +35,22 @@ router.post("/:patientId/prescriptions", authRequired, requiredRoles.doctor, asy
   res.status(201).json({ success: true, data: prescription });
 }));
 
+router.patch(
+  "/prescriptions/:prescriptionId",
+  authRequired,
+  requiredRoles.doctor,
+  asyncHandler(async (req, res) => {
+    const prescription = await medService.updatePrescription(
+      req.params.prescriptionId,
+      req.user.id,
+      req.body
+    );
+
+    res.json({ success: true, data: prescription });
+  })
+);
+
+
 // Doctor creates medication schedule
 router.post("/:patientId/schedules", authRequired, requiredRoles.doctor, asyncHandler(async (req, res) => {
   const schedule = await medService.createMedicationSchedule(
@@ -136,6 +152,29 @@ router.get("/my/prescriptions", authRequired, requiredRoles.patient, asyncHandle
   const prescriptions = await medService.getPrescriptions(patient.id);
   res.json({ success: true, data: prescriptions });
 }));
+
+router.get(
+  "/:patientId/prescriptions",
+  authRequired,
+  requiredRoles.doctor,
+  asyncHandler(async (req, res) => {
+    const { doctor } = await medService.verifyDoctorPatient(
+      req.params.patientId,
+      req.user.id
+    );
+
+    const prescriptions = await medService.getPrescriptions(
+      req.params.patientId
+    );
+
+    // Return only prescriptions belonging to this doctor.
+    const doctorPrescriptions = prescriptions.filter(
+      (prescription) => prescription.doctorId === doctor.id
+    );
+
+    res.json({ success: true, data: doctorPrescriptions });
+  })
+);
 
 // Get single schedule (shared)
 router.get("/schedules/:scheduleId", authRequired, asyncHandler(async (req, res) => {

@@ -330,6 +330,31 @@ class ApiService {
     return get('medications/$patientId/schedules', accessToken: accessToken);
   }
 
+  Future<List<Map<String, dynamic>>> getPatientPrescriptionsForDoctor({
+    required String patientId,
+    required String accessToken,
+  }) async {
+    final response = await get(
+      'medications/${Uri.encodeComponent(patientId)}/prescriptions',
+      accessToken: accessToken,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic> || decoded['data'] is! List) {
+      throw const FormatException('Invalid prescriptions response.');
+    }
+
+    return (decoded['data'] as List).whereType<Map<String, dynamic>>().toList();
+  }
+
   Future<Map<String, dynamic>> updateMedicationSchedule({
     required String scheduleId,
     required String accessToken,
@@ -353,6 +378,34 @@ class ApiService {
     if (decoded is! Map<String, dynamic> ||
         decoded['data'] is! Map<String, dynamic>) {
       throw const FormatException('Invalid schedule update response.');
+    }
+
+    return decoded['data'] as Map<String, dynamic>;
+  }
+
+  Future<Map<String, dynamic>> updatePrescription({
+    required String prescriptionId,
+    required String accessToken,
+    required Map<String, dynamic> body,
+  }) async {
+    final response = await patch(
+      'medications/prescriptions/${Uri.encodeComponent(prescriptionId)}',
+      accessToken: accessToken,
+      body: body,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic> ||
+        decoded['data'] is! Map<String, dynamic>) {
+      throw const FormatException('Invalid prescription update response.');
     }
 
     return decoded['data'] as Map<String, dynamic>;
