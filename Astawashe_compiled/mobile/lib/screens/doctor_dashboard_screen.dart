@@ -238,6 +238,13 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                       icon: const Icon(Icons.edit_calendar_outlined),
                       label: const Text('Edit schedules'),
                     ),
+                    OutlinedButton.icon(
+                      onPressed: patientId == null || patientId.isEmpty
+                          ? null
+                          : () => _showPatientNotes(patient),
+                      icon: const Icon(Icons.note_alt_outlined),
+                      label: const Text('Patient Notes'),
+                    ),
                   ],
                 ),
               ),
@@ -349,6 +356,265 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Could not load schedules: $error')),
       );
+    }
+  }
+
+  Future<void> _showPatientNotes(Map<String, dynamic> patient) async {
+    final patientId = patient['id']?.toString();
+
+    if (patientId == null || patientId.isEmpty) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Patient ID is missing.')));
+      return;
+    }
+
+    try {
+      final response = await _apiService.getPatientSchedulesForDoctor(
+        patientId: patientId,
+        accessToken: widget.session.accessToken,
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _apiErrorMessage(
+                response.body,
+                'Could not load patient medications.',
+              ),
+            ),
+          ),
+        );
+        return;
+      }
+
+      final decoded = jsonDecode(response.body);
+
+      if (decoded is! Map<String, dynamic> || decoded['data'] is! List) {
+        throw const FormatException('Invalid patient medications response.');
+      }
+
+      final schedules = (decoded['data'] as List)
+          .whereType<Map<String, dynamic>>()
+          .toList();
+
+      // A medication may have more than one schedule. Show it only once.
+      final medicationsById = <String, Map<String, dynamic>>{};
+
+      for (final schedule in schedules) {
+        final medication = schedule['medication'];
+
+        if (medication is! Map<String, dynamic>) continue;
+
+        final medicationId = medication['id']?.toString();
+
+        if (medicationId == null || medicationId.isEmpty) continue;
+
+        medicationsById.putIfAbsent(
+          medicationId,
+          () => Map<String, dynamic>.from(medication),
+        );
+      }
+
+      final medications = medicationsById.values.toList();
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text(
+              'Patient Notes — '
+              '${_display(patient['fullName'], fallback: 'Patient')}',
+            ),
+            content: SizedBox(
+              width: 500,
+              child: medications.isEmpty
+                  ? const Text(
+                      'No medications with active schedules were found '
+                      'for this patient.',
+                    )
+                  : ConstrainedBox(
+                      constraints: const BoxConstraints(maxHeight: 450),
+                      child: ListView.separated(
+                        shrinkWrap: true,
+                        itemCount: medications.length,
+                        separatorBuilder: (_, _) => const Divider(),
+                        itemBuilder: (context, index) {
+                          final medication = medications[index];
+                          final medicationName =
+                              medication['name']?.toString() ?? 'Medication';
+
+                          final notes =
+                              medication['notes']?.toString().trim() ?? '';
+
+                          return ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.medication_outlined),
+                            title: Text(medicationName),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                notes.isEmpty ? 'No notes added.' : notes,
+                              ),
+                            ),
+                            isThreeLine: notes.contains('\n'),
+                            trailing: IconButton(
+                              tooltip: 'Edit notes',
+                              icon: const Icon(Icons.edit_outlined),
+                              onPressed: () async {
+                                await _showEditMedicationNotesDialog(
+                                  medication: medication,
+                                  onSaved: (updatedNotes) {
+                                    setDialogState(() {
+                                      medication['notes'] = updatedNotes;
+                                    });
+                                  },
+                                );
+                              },
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.message)));
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Could not load patient notes: $error')),
+      );
+    }
+  }
+
+  Future<void> _showEditMedicationNotesDialog({
+    required Map<String, dynamic> medication,
+    required ValueChanged<String> onSaved,
+  }) async {
+    final medicationId = medication['id']?.toString();
+
+    if (medicationId == null || medicationId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Medication ID is missing.')),
+      );
+      return;
+    }
+
+    final notesController = TextEditingController(
+      text: medication['notes']?.toString() ?? '',
+    );
+
+    bool saving = false;
+
+    try {
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (dialogContext) => StatefulBuilder(
+          builder: (context, setDialogState) => AlertDialog(
+            title: Text('Notes — ${medication['name'] ?? 'Medication'}'),
+            content: SizedBox(
+              width: 450,
+              child: TextField(
+                controller: notesController,
+                autofocus: true,
+                minLines: 4,
+                maxLines: 8,
+                enabled: !saving,
+                decoration: const InputDecoration(
+                  labelText: 'Instructions for the patient',
+                  hintText: 'Enter medication-specific instructions...',
+                  alignLabelWithHint: true,
+                  border: OutlineInputBorder(),
+                ),
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: saving
+                    ? null
+                    : () => Navigator.of(dialogContext).pop(),
+                child: const Text('Cancel'),
+              ),
+              FilledButton(
+                onPressed: saving
+                    ? null
+                    : () async {
+                        setDialogState(() => saving = true);
+
+                        try {
+                          final updatedNotes = notesController.text.trim();
+
+                          await _apiService.updateMedicationNotes(
+                            medicationId: medicationId,
+                            notes: updatedNotes,
+                            accessToken: widget.session.accessToken,
+                          );
+
+                          if (!mounted || !dialogContext.mounted) {
+                            return;
+                          }
+
+                          // Update the notes shown in the parent dialog.
+                          onSaved(updatedNotes);
+
+                          Navigator.of(dialogContext).pop();
+
+                          ScaffoldMessenger.of(this.context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Patient notes saved successfully.',
+                              ),
+                            ),
+                          );
+                        } catch (error) {
+                          if (!dialogContext.mounted) return;
+
+                          setDialogState(() => saving = false);
+
+                          ScaffoldMessenger.of(dialogContext).showSnackBar(
+                            SnackBar(
+                              content: Text(
+                                'Could not save patient notes: '
+                                '${error.toString().replaceFirst('Exception: ', '')}',
+                              ),
+                            ),
+                          );
+                        }
+                      },
+                child: saving
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                    : const Text('Save notes'),
+              ),
+            ],
+          ),
+        ),
+      );
+    } finally {
+      notesController.dispose();
     }
   }
 

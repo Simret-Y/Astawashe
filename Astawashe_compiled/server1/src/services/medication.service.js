@@ -126,6 +126,64 @@ const updateMedication = async (medicationId, data) => {
   });
 };
 
+
+ // Update notes on a medication owned by the logged-in doctor
+const updateMedicationNotes = async (medicationId, doctorUserId, notes) => {
+  if (typeof notes !== "string" && notes !== null) {
+    const error = new Error("Notes must be text");
+    error.status = 400;
+    throw error;
+  }
+
+  const doctor = await prisma.doctor.findUnique({
+    where: { userId: doctorUserId },
+  });
+
+  if (!doctor) {
+    const error = new Error("Doctor profile not found");
+    error.status = 404;
+    throw error;
+  }
+
+  const medication = await prisma.medication.findFirst({
+    where: {
+      id: medicationId,
+      doctorId: doctor.id,
+      isActive: true,
+    },
+  });
+
+  if (!medication) {
+    const error = new Error(
+      "Medication not found or you do not have permission to update it"
+    );
+    error.status = 404;
+    throw error;
+  }
+
+  await verifyDoctorPatient(medication.patientId, doctorUserId);
+
+  const updatedMedication = await prisma.medication.update({
+    where: { id: medication.id },
+    data: { notes: notes === null ? null : notes.trim() },
+  });
+
+  await prisma.auditLog.create({
+    data: {
+      actor: doctorUserId,
+      action: "UPDATE_MEDICATION_NOTES",
+      entityType: "MEDICATION",
+      entityId: medication.id,
+      metadata: {
+        patientId: medication.patientId,
+      },
+    },
+  });
+
+  return updatedMedication;
+};
+
+
 // Deactivate medication
 const deactivateMedication = async (medicationId) => {
   return prisma.medication.update({
@@ -641,5 +699,6 @@ module.exports = {
   getScheduleById,
   updateSchedule,
   verifyDoctorPatient,
+  updateMedicationNotes,
   deactivateSchedule
 };

@@ -576,6 +576,28 @@ class ApiService {
     return decoded;
   }
 
+  Future<dynamic> updateMedicationNotes({
+    required String medicationId,
+    required String notes,
+    required String accessToken,
+  }) async {
+    final response = await _client.patch(
+      ApiConfig.endpoint('medications/$medicationId/notes'),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $accessToken',
+      },
+      body: jsonEncode({'notes': notes}),
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to save patient notes: ${response.body}');
+    }
+
+    return jsonDecode(response.body);
+  }
+
   void dispose() {
     _client.close();
   }

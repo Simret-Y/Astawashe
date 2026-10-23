@@ -96,6 +96,27 @@ router.delete("/schedules/:scheduleId", authRequired, requiredRoles.doctor, asyn
   res.json({ success: true, message: "Schedule deactivated", data: schedule });
 }));
 
+router.patch(
+  "/:medicationId/notes",
+  authRequired,
+  requiredRoles.doctor,
+  asyncHandler(async (req, res) => {
+    if (!Object.prototype.hasOwnProperty.call(req.body, "notes")) {
+      const error = new Error("Notes field is required");
+      error.status = 400;
+      throw error;
+    }
+
+    const medication = await medService.updateMedicationNotes(
+      req.params.medicationId,
+      req.user.id,
+      req.body.notes
+    );
+
+    res.json({ success: true, data: medication });
+  })
+);
+
 // ===== PATIENT ROUTES =====
 
 // Patient gets their medications
