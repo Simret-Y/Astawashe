@@ -19,6 +19,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
   Map<String, dynamic>? _profile;
   List<dynamic> _medications = [];
+  List<dynamic> _prescriptions = [];
   List<dynamic> _schedules = [];
   Map<String, dynamic>? _todayAdherence;
 
@@ -149,6 +150,7 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         [
           _getJson('medications/my/medications'),
           _getJson('medications/my/schedules'),
+          _getJson('medications/my/prescriptions'),
           _getJson('adherence/my/today'),
           _getJson('adherence/my/weekly'),
         ].map((future) async {
@@ -164,13 +166,14 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
       final medicationResult = results[0];
       final scheduleResult = results[1];
-      final todayResult = results[2];
-      final weeklyResult = results[3];
+      final prescriptionResult = results[2];
+      final todayResult = results[3];
+      final weeklyResult = results[4];
 
       setState(() {
-        _profile = profileResult;
         _medications = _extractList(medicationResult['value']);
         _schedules = _extractList(scheduleResult['value']);
+        _prescriptions = _extractList(prescriptionResult['value']);
         _todayAdherence = _extractData(todayResult['value']);
 
         final failures = <String>[];
@@ -179,6 +182,9 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
         }
         if (scheduleResult['error'] != null) {
           failures.add('schedules');
+        }
+        if (prescriptionResult['error'] != null) {
+          failures.add('prescriptions');
         }
         if (todayResult['error'] != null) {
           failures.add('today’s adherence');
@@ -369,6 +375,57 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
     );
   }
 
+  Widget _prescriptionCard(Map<String, dynamic> prescription) {
+    final medication = prescription['medication'];
+    final medicationName = medication is Map<String, dynamic>
+        ? medication['name']
+        : null;
+
+    final startDate = _date(prescription['startDate']);
+    final endDate = prescription['endDate'] == null
+        ? 'No end date'
+        : _date(prescription['endDate']);
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.receipt_long, size: 28),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _display(medicationName, fallback: 'Medication'),
+                    style: Theme.of(context).textTheme.titleMedium,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Text('Prescribed dose: ${_display(prescription['dose'])}'),
+            const SizedBox(height: 4),
+            Text('Frequency: ${_display(prescription['frequency'])}'),
+            const SizedBox(height: 4),
+            Text('Start date: $startDate'),
+            const SizedBox(height: 4),
+            Text('End date: $endDate'),
+            if ((prescription['instructions'] ?? '')
+                .toString()
+                .trim()
+                .isNotEmpty) ...[
+              const SizedBox(height: 8),
+              Text('Instructions: ${prescription['instructions']}'),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildDashboard() {
     final adherenceLog = _todayAdherence?['adherenceLog'];
     final riskStatus = _todayAdherence?['riskStatus'];
@@ -443,6 +500,19 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
               _medicationCard,
             ),
 
+          _sectionTitle('My prescriptions'),
+          if (_prescriptions.isEmpty)
+            const Card(
+              child: Padding(
+                padding: EdgeInsets.all(16),
+                child: Text('No prescriptions found.'),
+              ),
+            )
+          else
+            ..._prescriptions.whereType<Map<String, dynamic>>().map(
+              _prescriptionCard,
+            ),
+
           _sectionTitle('My schedules'),
           if (_schedules.isEmpty)
             const Card(
@@ -460,6 +530,31 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
 
               final scheduleId = schedule['id']?.toString() ?? '';
               final isSubmitting = _submittingScheduleIds.contains(scheduleId);
+
+              final doseLogs = schedule['doseLogs'];
+              final today = DateTime.now().toUtc();
+
+              final todayDoseLog = doseLogs is List
+                  ? doseLogs.whereType<Map<String, dynamic>>().where((log) {
+                      final rawDate = log['scheduledDate'];
+                      if (rawDate == null) return false;
+
+                      final scheduledDate = DateTime.tryParse(
+                        rawDate.toString(),
+                      );
+                      if (scheduledDate == null) return false;
+
+                      final utcDate = scheduledDate.toUtc();
+
+                      return utcDate.year == today.year &&
+                          utcDate.month == today.month &&
+                          utcDate.day == today.day;
+                    }).firstOrNull
+                  : null;
+
+              final doseStatus = todayDoseLog?['status']?.toString();
+              final doseAlreadyRecorded =
+                  doseStatus == 'TAKEN' || doseStatus == 'NOT_TAKEN';
 
               return Card(
                 child: Padding(
@@ -481,29 +576,66 @@ class _PatientDashboardScreenState extends State<PatientDashboardScreen> {
                         isThreeLine: true,
                       ),
                       const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: FilledButton.icon(
-                              onPressed: isSubmitting
-                                  ? null
-                                  : () => _recordDose(schedule, 'TAKEN'),
-                              icon: const Icon(Icons.check),
-                              label: const Text('Mark taken'),
-                            ),
+                      if (doseAlreadyRecorded) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: doseStatus == 'TAKEN'
+                                ? Colors.green.withValues(alpha: 0.1)
+                                : Colors.orange.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
                           ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: OutlinedButton.icon(
-                              onPressed: isSubmitting
-                                  ? null
-                                  : () => _recordDose(schedule, 'NOT_TAKEN'),
-                              icon: const Icon(Icons.close),
-                              label: const Text('Not taken'),
-                            ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                doseStatus == 'TAKEN'
+                                    ? Icons.check_circle
+                                    : Icons.cancel,
+                                color: doseStatus == 'TAKEN'
+                                    ? Colors.green
+                                    : Colors.orange,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  doseStatus == 'TAKEN'
+                                      ? 'Dose confirmed as taken today.'
+                                      : 'Dose confirmed as not taken today.',
+                                ),
+                              ),
+                            ],
                           ),
+                        ),
+                      ] else ...[
+                        Row(
+                          children: [
+                            Expanded(
+                              child: FilledButton.icon(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () => _recordDose(schedule, 'TAKEN'),
+                                icon: const Icon(Icons.check),
+                                label: const Text('Mark taken'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: isSubmitting
+                                    ? null
+                                    : () => _recordDose(schedule, 'NOT_TAKEN'),
+                                icon: const Icon(Icons.close),
+                                label: const Text('Not taken'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        if (isSubmitting) ...[
+                          const SizedBox(height: 12),
+                          const LinearProgressIndicator(),
                         ],
-                      ),
+                      ],
                       if (isSubmitting) ...[
                         const SizedBox(height: 12),
                         const LinearProgressIndicator(),

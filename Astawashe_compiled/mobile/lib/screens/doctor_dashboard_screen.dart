@@ -450,7 +450,7 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
                               'prescriptionId': prescriptionId,
                               'dosage': dosageController.text.trim(),
                               'time': timeController.text.trim(),
-                              'frequency': 'DAILY',
+                              'frequency': frequency,
                               'startDate': startDate,
                               if (endDate.isNotEmpty) 'endDate': endDate,
                             },
