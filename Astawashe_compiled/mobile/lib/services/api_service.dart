@@ -503,6 +503,79 @@ class ApiService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getDoctorCases({
+    required String accessToken,
+  }) async {
+    final response = await get('cases', accessToken: accessToken);
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! List) {
+      throw const FormatException('Invalid cases response.');
+    }
+
+    return decoded.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<List<Map<String, dynamic>>> getCaseMessages({
+    required String caseId,
+    required String accessToken,
+  }) async {
+    final response = await get(
+      'cases/${Uri.encodeComponent(caseId)}/messages',
+      accessToken: accessToken,
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! List) {
+      throw const FormatException('Invalid messages response.');
+    }
+
+    return decoded.whereType<Map<String, dynamic>>().toList();
+  }
+
+  Future<Map<String, dynamic>> sendCaseMessage({
+    required String caseId,
+    required String content,
+    required String accessToken,
+  }) async {
+    final response = await post(
+      'cases/${Uri.encodeComponent(caseId)}/messages',
+      accessToken: accessToken,
+      body: {'content': content.trim()},
+    );
+
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw ApiException(
+        statusCode: response.statusCode,
+        message: _readErrorMessage(response.body),
+      );
+    }
+
+    final decoded = jsonDecode(response.body);
+
+    if (decoded is! Map<String, dynamic>) {
+      throw const FormatException('Invalid sent-message response.');
+    }
+
+    return decoded;
+  }
+
   void dispose() {
     _client.close();
   }

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/auth_session.dart';
 import '../services/api_service.dart';
 import 'notifications_screen.dart';
+import 'messages_screen.dart';
 
 class DoctorDashboardScreen extends StatefulWidget {
   final AuthSession session;
@@ -1665,6 +1666,18 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
             icon: const Icon(Icons.notifications_outlined),
             label: const Text('Notifications'),
           ),
+          const SizedBox(height: 8),
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MessagesScreen(session: widget.session),
+                ),
+              );
+            },
+            icon: const Icon(Icons.message_outlined),
+            label: const Text('Messages'),
+          ),
           _sectionTitle('Active patients (${patients.length})'),
           TextField(
             controller: _patientSearchController,
@@ -1760,6 +1773,17 @@ class _DoctorDashboardScreenState extends State<DoctorDashboardScreen> {
       appBar: AppBar(
         title: const Text('Doctor Dashboard'),
         actions: [
+          IconButton(
+            tooltip: 'Messages',
+            onPressed: () {
+              Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => MessagesScreen(session: widget.session),
+                ),
+              );
+            },
+            icon: const Icon(Icons.message_outlined),
+          ),
           IconButton(
             tooltip: 'Refresh dashboard',
             onPressed: _isLoading ? null : _loadDashboard,
