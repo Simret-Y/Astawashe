@@ -125,7 +125,7 @@ const checkThreeMissedDoses = async (scheduleId, patientId) => {
     // Serialize alert checks for this schedule.
     // The lock is automatically released when the transaction ends.
     await tx.$queryRaw`
-  SELECT pg_advisory_xact_lock(hashtext(${scheduleId}))
+  SELECT pg_advisory_xact_lock(hashtext(${scheduleId}))::text
 `;
 
     const schedule = await tx.medicationSchedule.findUnique({

@@ -9,7 +9,7 @@ void main() {
     expect(find.text('Welcome back'), findsOneWidget);
     expect(find.text('Email address'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-    expect(find.text('Sign in'), findsNWidgets(2));
+    expect(find.text('Sign in'), findsOneWidget);
   });
 
   testWidgets('empty fields show validation errors', (tester) async {
