@@ -1,7 +1,9 @@
+const http = require("http");
 const app = require("./app");
 const { env } = require("./config/env");
 const prisma = require("./db/prisma");
 const bcrypt = require("bcryptjs");
+const { initSocket } = require("./socket");
 
 const seedSystemAdmin = async () => {
   try {
@@ -31,7 +33,11 @@ const seedSystemAdmin = async () => {
   }
 };
 
-app.listen(env.port, async () => {
-  console.log(`API listening on :${env.port}`);
+const server = http.createServer(app);
+initSocket(server);
+
+server.listen(env.port, async () => {
+  console.log(`API and Realtime Socket listening on :${env.port}`);
   await seedSystemAdmin();
 });
+

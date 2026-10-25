@@ -10,6 +10,7 @@ router.post("/register", validate(registerSchema), register);
 router.post("/login", validate(loginSchema), login);
 router.post("/verify-email", validate(verifyEmailSchema), verifyEmail);
 router.post("/resend-otp", validate(resendOtpSchema), resendVerificationCode);
+router.post("/resend-verification", validate(resendOtpSchema), resendVerificationCode);
 router.post("/refresh", validate(refreshSchema), refresh);
 router.get("/me", authRequired, me);
 
