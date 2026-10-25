@@ -63,7 +63,7 @@ const cleanDatabaseAndSeedAdmin = async () => {
       }
     });
 
-    console.log("✅ Official System Admin ready:", adminUser.email);
+    console.log("Official System Admin ready:", adminUser.email);
     console.log("\n========================================");
     console.log("CLEAN DEMO ENVIRONMENT READY");
     console.log("System Admin Credentials:");
@@ -73,7 +73,7 @@ const cleanDatabaseAndSeedAdmin = async () => {
     console.log("========================================\n");
 
   } catch (error) {
-    console.error("❌ Seeding/Clean error:", error);
+    console.error("Seeding/Clean error:", error);
     throw error;
   }
 };

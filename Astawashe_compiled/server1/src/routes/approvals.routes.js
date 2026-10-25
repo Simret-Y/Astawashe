@@ -122,12 +122,25 @@ router.post("/doctor/patients/:patientId/approve", authRequired, requiredRoles.d
     nickname
   );
 
+  try {
+    const { emitRequestUpdated } = require("../socket");
+    emitRequestUpdated({
+      patientUserId: patient.userId,
+      patientId: patient.id,
+      status: patient.status,
+      request: patient
+    });
+  } catch (err) {
+    console.warn("[Realtime] Failed to emit request:updated:", err.message);
+  }
+
   res.json({
     success: true,
     message: `Patient ${action.toLowerCase()}d by doctor`,
     data: patient
   });
 }));
+
 
 // Get pending patients (system level)
 router.get("/admin/patients/pending", authRequired, requiredRoles.systemAdmin, asyncHandler(async (req, res) => {
