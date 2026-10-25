@@ -99,19 +99,25 @@ router.post("/demo/trigger", authRequired, asyncHandler(async (req, res) => {
 
 // ===== DEMO REMINDER RESPOND =====
 router.post("/demo/respond", authRequired, asyncHandler(async (req, res) => {
-  const { scheduleId, patientId, response } = req.body;
+  let { scheduleId, patientId, response } = req.body;
 
-  if (!scheduleId || !patientId || !response) {
+  let pId = patientId;
+  if (!pId) {
+    const p = await prisma.patientProfile.findUnique({ where: { userId: req.user.id } });
+    if (p) pId = p.id;
+  }
+
+  if (!scheduleId || !pId || !response) {
     return res.status(400).json({ success: false, message: "scheduleId, patientId, and response (1 or 2) are required" });
   }
 
   const isTaken = response === "1";
   const status = isTaken ? "TAKEN" : "NOT_TAKEN";
 
-  const patient = await prisma.patientProfile.findUnique({ where: { id: patientId } });
+  const patient = await prisma.patientProfile.findUnique({ where: { id: pId } });
   const channel = patient?.reminderMode || "VOICE";
 
-  const doseLog = await recordDoseConfirmation(scheduleId, patientId, status, channel, response);
+  const doseLog = await recordDoseConfirmation(scheduleId, pId, status, channel, response);
 
   res.json({
     success: true,
@@ -124,6 +130,73 @@ router.post("/demo/respond", authRequired, asyncHandler(async (req, res) => {
     }
   });
 }));
+
+// ===== DEMO REMINDER SNOOZE =====
+router.post("/demo/snooze", authRequired, asyncHandler(async (req, res) => {
+  const { scheduleId, durationMinutes = 10, patientId } = req.body;
+
+  if (!scheduleId) {
+    return res.status(400).json({ success: false, message: "scheduleId is required" });
+  }
+
+  let pId = patientId;
+  if (!pId) {
+    const p = await prisma.patientProfile.findUnique({ where: { userId: req.user.id } });
+    if (p) pId = p.id;
+  }
+
+  const snoozedUntil = new Date(Date.now() + durationMinutes * 60 * 1000);
+  const today = new Date();
+  today.setUTCHours(0, 0, 0, 0);
+
+  let doseLog = null;
+  if (pId) {
+    doseLog = await prisma.doseLog.upsert({
+      where: {
+        scheduleId_scheduledDate: {
+          scheduleId,
+          scheduledDate: today
+        }
+      },
+      create: {
+        patientId: pId,
+        scheduleId,
+        scheduledDate: today,
+        status: "SNOOZED",
+        notes: `Snoozed for ${durationMinutes} minutes`
+      },
+      update: {
+        status: "SNOOZED",
+        notes: `Snoozed for ${durationMinutes} minutes`
+      }
+    });
+
+    try {
+      const { emitDoseUpdated } = require("../socket");
+      const pat = await prisma.patientProfile.findUnique({
+        where: { id: pId },
+        include: { guardians: true, assignedDoctor: true }
+      });
+      emitDoseUpdated({
+        doctorId: pat?.doctorId || pat?.assignedDoctor?.id,
+        patientId: pId,
+        guardianIds: (pat?.guardians || []).map(g => g.guardianId),
+        doseLog
+      });
+    } catch (_) {}
+  }
+
+  res.json({
+    success: true,
+    message: `Reminder snoozed for ${durationMinutes} minutes`,
+    data: {
+      scheduleId,
+      snoozedUntil: snoozedUntil.toISOString(),
+      doseLog
+    }
+  });
+}));
+
 
 module.exports = router;
 

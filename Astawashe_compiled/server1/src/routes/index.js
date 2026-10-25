@@ -5,12 +5,14 @@ const hospitalRoutes = require("./hospitals.routes");
 const doctorRoutes = require("./doctors.routes");
 const caseRoutes = require("./cases.routes");
 const messageRoutes = require("./messages.routes");
+const directMessagesRoutes = require("./direct-messages.routes");
 const reminderRoutes = require("./reminders.routes");
 const habitRoutes = require("./habits.routes");
 const servicesRoutes = require("./services.routes");
 const notificationRoutes = require("./notifications.routes");
 const approvalsRoutes = require("./approvals.routes");
 const medicationsRoutes = require("./medications.routes");
+const prescriptionsRoutes = require("./prescriptions.routes");
 const demoCenterRoutes = require("./demo-center.routes");
 const adherenceRoutes = require("./adherence.routes");
 const guardiansRoutes = require("./guardians.routes");
@@ -25,6 +27,7 @@ router.get("/health", (req, res) => {
 router.use("/auth", authRoutes);
 router.use("/approvals", approvalsRoutes);
 router.use("/medications", medicationsRoutes);
+router.use("/prescriptions", prescriptionsRoutes);
 router.use("/adherence", adherenceRoutes);
 router.use("/guardians", guardiansRoutes);
 router.use("/dashboard", dashboardRoutes);
@@ -33,11 +36,14 @@ router.use("/demo", demoCenterRoutes);
 router.use("/patients", patientRoutes);
 router.use("/hospitals", hospitalRoutes);
 router.use("/doctors", doctorRoutes);
+router.use("/doctor", doctorRoutes);
 router.use("/cases", caseRoutes);
 router.use("/cases", messageRoutes);
+router.use("/messages", directMessagesRoutes);
 router.use("/reminders", reminderRoutes);
 router.use("/habits", habitRoutes);
 router.use("/services", servicesRoutes);
 router.use("/notifications", notificationRoutes);
 
 module.exports = router;
+

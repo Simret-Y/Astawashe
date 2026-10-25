@@ -370,6 +370,14 @@ router.get(
       where: {
         userId: req.user.id,
       },
+      include: {
+        hospital: {
+          select: {
+            id: true,
+            name: true,
+          },
+        },
+      },
     });
 
     if (!doctor) {
@@ -496,6 +504,10 @@ router.get(
           phone: doctor.phone,
           specialization: doctor.specialization,
           status: doctor.status,
+          licenseNumber: doctor.licenseNumber,
+          experience: doctor.experience,
+          hospitalId: doctor.hospitalId,
+          hospitalName: doctor.hospital ? doctor.hospital.name : "AstaWashe Partner Hospital",
         },
 
         stats: {
@@ -533,6 +545,12 @@ router.get(
         },
 
         include: {
+          hospital: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
           assignedDoctor: {
             select: {
               id: true,
@@ -696,12 +714,26 @@ router.get(
       data: {
         patient: {
           id: patient.id,
+          userId: patient.userId,
+          hospitalId: patient.hospitalId,
+          doctorId: patient.doctorId,
           fullName: patient.fullName,
           nickname: patient.nickname,
           status: patient.status,
           language: patient.language,
           reminderMode: patient.reminderMode,
+          dob: patient.dob,
+          gender: patient.gender,
+          phone: patient.phone,
+          address: patient.address,
+          emergencyContact: patient.emergencyContact,
+          emergencyContactPhone: patient.emergencyContactPhone,
+          bloodGroup: patient.bloodGroup,
+          allergies: patient.allergies,
+          chronicConditions: patient.chronicConditions,
         },
+
+        hospitalName: patient.hospital ? patient.hospital.name : "AstaWashe General Hospital",
 
         doctor: patient.assignedDoctor
           ? {
@@ -710,7 +742,7 @@ router.get(
               specialization:
                 patient.assignedDoctor.specialization,
               email:
-                patient.assignedDoctor.user.email,
+                patient.assignedDoctor.user?.email,
             }
           : null,
 

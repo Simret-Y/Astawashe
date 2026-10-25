@@ -58,6 +58,25 @@ const recordDoseConfirmation = async (scheduleId, patientId, status, method, voi
   // Check for 3 consecutive missed doses
   await checkThreeMissedDoses(scheduleId, patientId);
 
+  try {
+    const { emitDoseUpdated } = require("../socket");
+    const patient = await prisma.patientProfile.findUnique({
+      where: { id: patientId },
+      include: { guardians: true, assignedDoctor: true }
+    });
+    const doctorId = patient?.doctorId || patient?.assignedDoctor?.id;
+    const guardianIds = (patient?.guardians || []).map(g => g.guardianId);
+
+    emitDoseUpdated({
+      doctorId,
+      patientId,
+      guardianIds,
+      doseLog
+    });
+  } catch (err) {
+    console.warn("[Realtime] Failed to emit dose:updated:", err.message);
+  }
+
   return doseLog;
 };
 
@@ -193,6 +212,23 @@ const checkThreeMissedDoses = async (scheduleId, patientId) => {
           }
         }
       });
+
+      try {
+        const { emitAlertCreated } = require("../socket");
+        emitAlertCreated({
+          doctorId: schedule.patient?.doctorId,
+          patientId,
+          guardianIds: (schedule.patient?.guardians || []).map(g => g.guardianId),
+          alert: {
+            alertType: "THREE_MISSED_DOSES",
+            message: `Patient ${schedule.patient.nickname || schedule.patient.fullName} has missed 3 consecutive doses of ${schedule.medication.name}`,
+            doseCount: 3,
+            patientId
+          }
+        });
+      } catch (err) {
+        console.warn("[Realtime] Failed to emit alert:created:", err.message);
+      }
     }
   }
 };
