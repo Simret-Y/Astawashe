@@ -46,7 +46,7 @@ class RemotePatientRepository implements PatientRepository {
 
   @override
   Future<PatientDashboardData> getDashboardData(String patientId) async {
-    final response = await dio.get('/dashboards/patient');
+    final response = await dio.get('/dashboard/patient');
     final data = response.data['data'] as Map<String, dynamic>? ?? {};
 
     final pJson = data['patient'] as Map<String, dynamic>? ?? {};
@@ -172,7 +172,7 @@ class RemotePatientRepository implements PatientRepository {
     if (filter != null) queryParams['filter'] = filter;
 
     final response = await dio.get(
-      '/doctor/patients',
+      '/doctors/patients',
       queryParameters: queryParams,
     );
     final list = response.data['data'] as List<dynamic>? ?? [];
@@ -248,19 +248,20 @@ class RemotePatientRepository implements PatientRepository {
 
   @override
   Future<DoctorDashboardData> getDoctorDashboard(String doctorId) async {
-    final response = await dio.get('/dashboards/doctor');
+    final response = await dio.get('/dashboard/doctor');
     final data = response.data['data'] as Map<String, dynamic>? ?? {};
 
-    final dMap = data['doctor'] as Map<String, dynamic>? ?? {};
+    final dJson = data['doctor'] as Map<String, dynamic>? ?? {};
     final doctor = Doctor(
-      id: dMap['id']?.toString() ?? doctorId,
-      userId: dMap['userId']?.toString() ?? '',
-      hospitalId: dMap['hospitalId']?.toString() ?? '',
-      name: dMap['name']?.toString() ?? 'Doctor',
-      email: dMap['email']?.toString(),
-      phone: dMap['phone']?.toString(),
-      specialization: dMap['specialization']?.toString() ?? 'General Physician',
-      status: dMap['status']?.toString() ?? 'ACTIVE',
+      id: dJson['id']?.toString() ?? doctorId,
+      userId: '',
+      hospitalId: dJson['hospitalId']?.toString() ?? '',
+      name: dJson['name']?.toString() ?? 'Doctor',
+      email: dJson['email']?.toString(),
+      phone: dJson['phone']?.toString(),
+      specialization:
+          dJson['specialization']?.toString() ?? 'General Physician',
+      status: dJson['status']?.toString() ?? 'ACTIVE',
     );
 
     final stats = data['stats'] as Map<String, dynamic>? ?? {};
@@ -271,10 +272,7 @@ class RemotePatientRepository implements PatientRepository {
       if (rawList == null) return [];
       return rawList.map((p) {
         final pMap = p as Map<String, dynamic>;
-        final adherence =
-            (pMap['adherenceToday'] as num?)?.toDouble() ??
-            (pMap['adherenceRate'] as num?)?.toDouble() ??
-            0.0;
+        final adherence = (pMap['adherenceToday'] as num?)?.toDouble() ?? 0.0;
         String status = 'on_track';
         if (adherence < 60) {
           status = 'high_risk';
@@ -288,14 +286,13 @@ class RemotePatientRepository implements PatientRepository {
               pMap['nickname']?.toString() ??
               pMap['fullName']?.toString() ??
               'Patient',
-          age: (pMap['age'] as num?)?.toInt() ?? 35,
-          gender: pMap['gender']?.toString() ?? 'Not specified',
+          age: 35,
+          gender: 'Not specified',
           adherenceRate: adherence,
           activeMedsCount: (pMap['medicationCount'] as num?)?.toInt() ?? 1,
           status: status,
-          lastDoseStatus: pMap['lastDoseStatus']?.toString() ?? 'pending',
-          phone:
-              pMap['phone']?.toString() ?? pMap['user']?['phone']?.toString(),
+          lastDoseStatus: 'pending',
+          phone: null,
         );
       }).toList();
     }
