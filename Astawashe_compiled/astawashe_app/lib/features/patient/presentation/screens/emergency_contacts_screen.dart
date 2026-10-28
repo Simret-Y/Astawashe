@@ -12,7 +12,8 @@ class EmergencyContactsScreen extends ConsumerStatefulWidget {
       _EmergencyContactsScreenState();
 }
 
-class _EmergencyContactsScreenState extends ConsumerState<EmergencyContactsScreen> {
+class _EmergencyContactsScreenState
+    extends ConsumerState<EmergencyContactsScreen> {
   final FlutterTts _tts = FlutterTts();
 
   Future<void> _readAloud({

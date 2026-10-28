@@ -14,7 +14,8 @@ class DoctorProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
-    String doctorName = dashboardAsync.value?.doctor.name ??
+    String doctorName =
+        dashboardAsync.value?.doctor.name ??
         user?.profileData?['name']?.toString() ??
         user?.fullName ??
         'Doctor';
@@ -22,13 +23,17 @@ class DoctorProfileScreen extends ConsumerWidget {
       doctorName = 'Dr. $doctorName';
     }
 
-    final specialization = dashboardAsync.value?.doctor.specialization ??
+    final specialization =
+        dashboardAsync.value?.doctor.specialization ??
         user?.profileData?['specialization']?.toString() ??
         'General Physician';
 
     final email = dashboardAsync.value?.doctor.email ?? user?.email ?? '';
     final phone = dashboardAsync.value?.doctor.phone ?? user?.phone ?? '';
-    final contactInfo = [if (phone.isNotEmpty) phone, if (email.isNotEmpty) email].join(' • ');
+    final contactInfo = [
+      if (phone.isNotEmpty) phone,
+      if (email.isNotEmpty) email,
+    ].join(' • ');
 
     final pendingCount = dashboardAsync.value?.pendingRequests.length ?? 0;
 
@@ -125,7 +130,10 @@ class DoctorProfileScreen extends ConsumerWidget {
                       title: 'Patient Approval Requests',
                       trailingWidget: pendingCount > 0
                           ? Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 3,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.statusWarningBg,
                                 borderRadius: BorderRadius.circular(10),
@@ -211,7 +219,8 @@ class DoctorProfileScreen extends ConsumerWidget {
           color: textColor ?? AppColors.textPrimary,
         ),
       ),
-      trailing: trailingWidget ??
+      trailing:
+          trailingWidget ??
           const Icon(
             Icons.chevron_right_rounded,
             size: 20,

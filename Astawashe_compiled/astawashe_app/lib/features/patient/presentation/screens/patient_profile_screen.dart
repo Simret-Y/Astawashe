@@ -14,7 +14,8 @@ class PatientProfileScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final dashAsync = ref.watch(patientDashboardProvider);
     final patient = dashAsync.value?.patient;
-    final patientName = patient?.fullName ??
+    final patientName =
+        patient?.fullName ??
         authState.user?.profileData?['fullName'] ??
         authState.user?.profileData?['name'] ??
         authState.user?.phone ??
@@ -83,8 +84,8 @@ class PatientProfileScreen extends ConsumerWidget {
                             hospitalName != null
                                 ? 'Patient • $hospitalName'
                                 : (doctorName != null
-                                    ? 'Patient • Dr. $doctorName'
-                                    : 'Patient'),
+                                      ? 'Patient • Dr. $doctorName'
+                                      : 'Patient'),
                             style: const TextStyle(
                               fontSize: 13,
                               fontWeight: FontWeight.w500,

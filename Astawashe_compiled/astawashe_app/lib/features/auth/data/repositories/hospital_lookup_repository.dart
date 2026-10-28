@@ -62,7 +62,9 @@ class RemoteHospitalLookupRepository implements HospitalLookupRepository {
       final data = response.data;
       if (data is Map<String, dynamic> && data['data'] is List) {
         final list = (data['data'] as List)
-            .map((item) => HospitalLookup.fromJson(item as Map<String, dynamic>))
+            .map(
+              (item) => HospitalLookup.fromJson(item as Map<String, dynamic>),
+            )
             .toList();
         if (list.isNotEmpty) return list;
       }
@@ -94,19 +96,23 @@ class RemoteHospitalLookupRepository implements HospitalLookupRepository {
   }
 }
 
-final hospitalLookupRepositoryProvider = Provider<HospitalLookupRepository>((ref) {
+final hospitalLookupRepositoryProvider = Provider<HospitalLookupRepository>((
+  ref,
+) {
   final dio = ref.watch(dioProvider);
   return RemoteHospitalLookupRepository(dio: dio);
 });
 
-final approvedHospitalsProvider = FutureProvider<List<HospitalLookup>>((ref) async {
+final approvedHospitalsProvider = FutureProvider<List<HospitalLookup>>((
+  ref,
+) async {
   final repo = ref.watch(hospitalLookupRepositoryProvider);
   return repo.getApprovedHospitals();
 });
 
 final hospitalDoctorsProvider =
     FutureProvider.family<List<DoctorLookup>, String>((ref, hospitalId) async {
-  if (hospitalId.isEmpty) return [];
-  final repo = ref.watch(hospitalLookupRepositoryProvider);
-  return repo.getHospitalDoctors(hospitalId);
-});
+      if (hospitalId.isEmpty) return [];
+      final repo = ref.watch(hospitalLookupRepositoryProvider);
+      return repo.getHospitalDoctors(hospitalId);
+    });

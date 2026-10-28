@@ -97,7 +97,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         return;
       }
 
-      if (!_isDoctorTab && (_selectedDoctorId == null || _selectedDoctorId!.isEmpty)) {
+      if (!_isDoctorTab &&
+          (_selectedDoctorId == null || _selectedDoctorId!.isEmpty)) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Please select an approved doctor in your hospital.'),
@@ -130,7 +131,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         final emailParam = Uri.encodeComponent(email ?? '');
         final roleParam = Uri.encodeComponent(role.toApiString());
         final demoOtpParam = Uri.encodeComponent(response.demoOtp ?? '');
-        context.push('/verify-otp?email=$emailParam&role=$roleParam&demoOtp=$demoOtpParam');
+        context.push(
+          '/verify-otp?email=$emailParam&role=$roleParam&demoOtp=$demoOtpParam',
+        );
       } else if (response.success) {
         final status = response.user?.status?.toUpperCase() ?? 'PENDING';
         if (status.contains('PENDING')) {
@@ -375,104 +378,122 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 6),
-                ref.watch(approvedHospitalsProvider).when(
-                  data: (hospitals) {
-                    if (hospitals.isEmpty) {
-                      return Container(
-                        padding: const EdgeInsets.all(12),
+                ref
+                    .watch(approvedHospitalsProvider)
+                    .when(
+                      data: (hospitals) {
+                        if (hospitals.isEmpty) {
+                          return Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFFFECACA),
+                              ),
+                            ),
+                            child: const Row(
+                              children: [
+                                Icon(
+                                  Icons.info_outline,
+                                  color: Colors.red,
+                                  size: 18,
+                                ),
+                                SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'No approved hospitals found in system.',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.red,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }
+                        return DropdownButtonFormField<String>(
+                          initialValue: _selectedHospitalId,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            prefixIcon: Icon(
+                              Icons.local_hospital_outlined,
+                              size: 20,
+                            ),
+                            hintText: 'Choose an approved hospital',
+                          ),
+                          items: hospitals.map((h) {
+                            final subtitle =
+                                h.city != null && h.city!.isNotEmpty
+                                ? ' (${h.city})'
+                                : '';
+                            return DropdownMenuItem<String>(
+                              value: h.id,
+                              child: Text(
+                                '${h.name}$subtitle',
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(fontSize: 14),
+                              ),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            setState(() {
+                              _selectedHospitalId = val;
+                              _selectedDoctorId = null;
+                            });
+                          },
+                        );
+                      },
+                      loading: () => Container(
+                        height: 50,
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFEF2F2),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFFECACA)),
                         ),
                         child: const Row(
                           children: [
-                            Icon(Icons.info_outline, color: Colors.red, size: 18),
-                            SizedBox(width: 8),
-                            Expanded(
-                              child: Text(
-                                'No approved hospitals found in system.',
-                                style: TextStyle(fontSize: 12, color: Colors.red),
+                            SizedBox(
+                              width: 16,
+                              height: 16,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                            SizedBox(width: 12),
+                            Text(
+                              'Loading approved hospitals...',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: AppColors.textMuted,
                               ),
                             ),
                           ],
                         ),
-                      );
-                    }
-                    return DropdownButtonFormField<String>(
-                      initialValue: _selectedHospitalId,
-                      isExpanded: true,
-                      decoration: const InputDecoration(
-                        prefixIcon: Icon(Icons.local_hospital_outlined, size: 20),
-                        hintText: 'Choose an approved hospital',
                       ),
-                      items: hospitals.map((h) {
-                        final subtitle = h.city != null && h.city!.isNotEmpty
-                            ? ' (${h.city})'
-                            : '';
-                        return DropdownMenuItem<String>(
-                          value: h.id,
-                          child: Text(
-                            '${h.name}$subtitle',
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(fontSize: 14),
+                      error: (err, stack) => DropdownButtonFormField<String>(
+                        initialValue: _selectedHospitalId,
+                        isExpanded: true,
+                        decoration: const InputDecoration(
+                          prefixIcon: Icon(
+                            Icons.local_hospital_outlined,
+                            size: 20,
                           ),
-                        );
-                      }).toList(),
-                      onChanged: (val) {
-                        setState(() {
-                          _selectedHospitalId = val;
-                          _selectedDoctorId = null;
-                        });
-                      },
-                    );
-                  },
-                  loading: () => Container(
-                    height: 50,
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: const Row(
-                      children: [
-                        SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
+                          hintText: 'Select hospital',
                         ),
-                        SizedBox(width: 12),
-                        Text(
-                          'Loading approved hospitals...',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: AppColors.textMuted,
+                        items: const [
+                          DropdownMenuItem(
+                            value: 'hosp-001',
+                            child: Text('Addis Hiwot General Hospital'),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  error: (err, stack) => DropdownButtonFormField<String>(
-                    initialValue: _selectedHospitalId,
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      prefixIcon: Icon(Icons.local_hospital_outlined, size: 20),
-                      hintText: 'Select hospital',
-                    ),
-                    items: const [
-                      DropdownMenuItem(
-                        value: 'hosp-001',
-                        child: Text('Addis Hiwot General Hospital'),
+                        ],
+                        onChanged: (val) {
+                          setState(() {
+                            _selectedHospitalId = val;
+                            _selectedDoctorId = null;
+                          });
+                        },
                       ),
-                    ],
-                    onChanged: (val) {
-                      setState(() {
-                        _selectedHospitalId = val;
-                        _selectedDoctorId = null;
-                      });
-                    },
-                  ),
-                ),
+                    ),
                 const SizedBox(height: 16),
 
                 // If Patient Tab, Doctor selection is required
@@ -581,7 +602,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 hintText: 'Choose your doctor',
                               ),
                               items: doctors.map((d) {
-                                final spec = d.specialization != null &&
+                                final spec =
+                                    d.specialization != null &&
                                         d.specialization!.isNotEmpty
                                     ? ' - ${d.specialization}'
                                     : '';
@@ -628,28 +650,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ],
                             ),
                           ),
-                          error: (err, stack) => DropdownButtonFormField<String>(
-                            initialValue: _selectedDoctorId,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              prefixIcon: Icon(
-                                Icons.medical_services_outlined,
-                                size: 20,
-                              ),
-                              hintText: 'Select doctor',
-                            ),
-                            items: const [
-                              DropdownMenuItem(
-                                value: 'doc-001',
-                                child: Text(
-                                  'Dr. Aklilu Yilma (Internal Medicine)',
+                          error: (err, stack) =>
+                              DropdownButtonFormField<String>(
+                                initialValue: _selectedDoctorId,
+                                isExpanded: true,
+                                decoration: const InputDecoration(
+                                  prefixIcon: Icon(
+                                    Icons.medical_services_outlined,
+                                    size: 20,
+                                  ),
+                                  hintText: 'Select doctor',
                                 ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'doc-001',
+                                    child: Text(
+                                      'Dr. Aklilu Yilma (Internal Medicine)',
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (val) {
+                                  setState(() => _selectedDoctorId = val);
+                                },
                               ),
-                            ],
-                            onChanged: (val) {
-                              setState(() => _selectedDoctorId = val);
-                            },
-                          ),
                         ),
                   const SizedBox(height: 16),
                 ],

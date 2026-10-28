@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/primary_button.dart';
 import '../../../patient/domain/repositories/patient_repository.dart';
@@ -25,6 +26,38 @@ class PatientDetailScreen extends ConsumerStatefulWidget {
 
 class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
   int _selectedTabIndex = 0;
+  final FlutterTts _tts = FlutterTts();
+
+  Future<void> _readPatientSummary() async {
+    final patientAsync = ref.read(
+      singlePatientDetailProvider(widget.patientId),
+    );
+    final medsAsync = ref.read(
+      patientMedicationsFamilyProvider(widget.patientId),
+    );
+
+    final patient = patientAsync.value;
+    final meds = medsAsync.value ?? [];
+
+    final name = patient?.name ?? 'Patient';
+    final age = patient?.age ?? 35;
+    final adherence = patient?.adherenceRate ?? 0.0;
+    final medsCount = meds.length;
+
+    final summary =
+        'Patient profile for $name, age $age. '
+        'Current adherence rate is ${adherence.round()} percent. '
+        'Patient has $medsCount active medications. '
+        'Tap on medications tab to view details.';
+
+    await _tts.speak(summary);
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -43,6 +76,13 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded, size: 20),
           onPressed: () => context.pop(),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.volume_up_rounded, color: AppColors.primary),
+            tooltip: 'Read summary',
+            onPressed: _readPatientSummary,
+          ),
+        ],
       ),
       body: SafeArea(
         child: patientAsync.when(
@@ -255,11 +295,12 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(6),
                                 child: LinearProgressIndicator(
-                                  value: adherence > 0 ? (adherence / 100.0).clamp(0.0, 1.0) : 0.05,
+                                  value: adherence > 0
+                                      ? (adherence / 100.0).clamp(0.0, 1.0)
+                                      : 0.05,
                                   minHeight: 8,
                                   backgroundColor: AppColors.border,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
                                     adherence >= 80
                                         ? AppColors.statusSuccess
                                         : adherence >= 60
@@ -286,7 +327,8 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                               ),
                             ),
                             TextButton.icon(
-                              onPressed: () => context.push('/doctor/prescriptions'),
+                              onPressed: () =>
+                                  context.push('/doctor/prescriptions'),
                               icon: const Icon(Icons.add, size: 16),
                               label: const Text('Prescribe'),
                             ),
@@ -322,7 +364,8 @@ class _PatientDetailScreenState extends ConsumerState<PatientDetailScreen> {
                                   padding: const EdgeInsets.only(bottom: 10.0),
                                   child: _buildMedItem(
                                     name: med.name,
-                                    schedule: '${med.dosage} • ${med.instructions}',
+                                    schedule:
+                                        '${med.dosage} • ${med.instructions}',
                                     dotColor: med.isActive
                                         ? AppColors.statusSuccess
                                         : AppColors.textMuted,

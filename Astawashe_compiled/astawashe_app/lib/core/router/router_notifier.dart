@@ -12,10 +12,7 @@ class RouterNotifier extends ChangeNotifier {
 
   String? redirect(BuildContext context, GoRouterState state) {
     final authState = _ref.read(authStateProvider);
-    return evaluateRedirect(
-      authState: authState,
-      loc: state.matchedLocation,
-    );
+    return evaluateRedirect(authState: authState, loc: state.matchedLocation);
   }
 
   static String? evaluateRedirect({

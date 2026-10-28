@@ -157,7 +157,8 @@ class AuthNotifier extends Notifier<AuthState> {
       } else {
         state = state.copyWith(
           status: AuthStatus.unauthenticated,
-          errorMessage: 'Invalid verification code. Please check and try again.',
+          errorMessage:
+              'Invalid verification code. Please check and try again.',
         );
         return false;
       }
@@ -176,9 +177,7 @@ class AuthNotifier extends Notifier<AuthState> {
       await _repository.resendVerificationEmail(email: email);
       return true;
     } catch (e) {
-      state = state.copyWith(
-        errorMessage: ApiException.fromError(e).message,
-      );
+      state = state.copyWith(errorMessage: ApiException.fromError(e).message);
       return false;
     }
   }

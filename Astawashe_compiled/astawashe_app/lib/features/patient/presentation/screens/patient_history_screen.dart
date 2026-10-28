@@ -13,7 +13,8 @@ final patientHistoryDosesProvider = FutureProvider.autoDispose<List<DoseLog>>((
   ref,
 ) async {
   final authState = ref.watch(authStateProvider);
-  final patientId = authState.user?.profileData?['patientId'] ??
+  final patientId =
+      authState.user?.profileData?['patientId'] ??
       authState.user?.id ??
       'patient-001';
   final repo = ref.watch(doseRepositoryProvider);
@@ -88,8 +89,8 @@ class PatientHistoryScreen extends ConsumerWidget {
                               adherenceRate >= 80
                                   ? 'Excellent Streak!'
                                   : (adherenceRate >= 50
-                                      ? 'Good Progress!'
-                                      : 'Adherence Track'),
+                                        ? 'Good Progress!'
+                                        : 'Adherence Track'),
                               style: const TextStyle(
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -156,7 +157,10 @@ class PatientHistoryScreen extends ConsumerWidget {
                     if (doses.isEmpty) {
                       return Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -164,11 +168,18 @@ class PatientHistoryScreen extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            Icon(Icons.history_rounded, size: 40, color: AppColors.textMuted.withAlpha(120)),
+                            Icon(
+                              Icons.history_rounded,
+                              size: 40,
+                              color: AppColors.textMuted.withAlpha(120),
+                            ),
                             const SizedBox(height: 8),
                             const Text(
                               'No recent dose logs yet',
-                              style: TextStyle(fontWeight: FontWeight.w600, color: AppColors.textSecondary),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.textSecondary,
+                              ),
                             ),
                           ],
                         ),

@@ -88,13 +88,13 @@ class TodayDosesNotifier extends AsyncNotifier<List<DoseLog>> {
   }
 }
 
-final patientProfileProvider = FutureProvider.autoDispose<PatientProfile>((ref) async {
+final patientProfileProvider = FutureProvider.autoDispose<PatientProfile>((
+  ref,
+) async {
   final repo = ref.watch(patientRepositoryProvider);
   final user = ref.watch(authStateProvider).user;
   final patientId =
-      user?.profileData?['patientId']?.toString() ??
-      user?.id ??
-      '';
+      user?.profileData?['patientId']?.toString() ?? user?.id ?? '';
   return repo.getProfile(patientId);
 });
 
@@ -103,9 +103,7 @@ final patientMedicationsProvider = FutureProvider.autoDispose<List<Medication>>(
     final repo = ref.watch(medicationRepositoryProvider);
     final user = ref.watch(authStateProvider).user;
     final patientId =
-        user?.profileData?['patientId']?.toString() ??
-        user?.id ??
-        '';
+        user?.profileData?['patientId']?.toString() ?? user?.id ?? '';
     return repo.getPatientMedications(patientId);
   },
 );

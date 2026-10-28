@@ -120,6 +120,50 @@ class PrescriptionsScreen extends ConsumerWidget {
                           color: AppColors.textMuted,
                         ),
                       ),
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          if (rx.status == 'ACTIVE')
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => _showEditPrescriptionDialog(
+                                  context,
+                                  ref,
+                                  rx,
+                                ),
+                                icon: const Icon(Icons.edit, size: 18),
+                                label: const Text('Edit'),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: AppColors.primary,
+                                  side: const BorderSide(
+                                    color: AppColors.primary,
+                                  ),
+                                  minimumSize: const Size.fromHeight(48),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          if (rx.status == 'ACTIVE') const SizedBox(width: 8),
+                          Expanded(
+                            child: OutlinedButton.icon(
+                              onPressed: () =>
+                                  _showStatusChangeDialog(context, ref, rx),
+                              icon: const Icon(Icons.more_horiz, size: 18),
+                              label: const Text('Status'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.textSecondary,
+                                side: const BorderSide(color: AppColors.border),
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 );
@@ -133,17 +177,218 @@ class PrescriptionsScreen extends ConsumerWidget {
     );
   }
 
+  void _showEditPrescriptionDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Prescription rx,
+  ) {
+    final user = ref.read(authStateProvider).user;
+    final doctorId =
+        user?.profileData?['doctorId']?.toString() ?? user?.id ?? '';
+
+    final patientCtrl = TextEditingController(text: rx.patientName);
+    final medCtrl = TextEditingController(text: rx.medicationName);
+    final strengthCtrl = TextEditingController(text: rx.strength);
+    final dosageCtrl = TextEditingController(text: rx.dosage);
+    final freqCtrl = TextEditingController(text: rx.frequency);
+    final notesCtrl = TextEditingController(text: rx.notes ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Edit Prescription'),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: patientCtrl,
+                  decoration: const InputDecoration(labelText: 'Patient Name'),
+                  readOnly: true,
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: medCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Medication Name (e.g. Metformin)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: strengthCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Strength (e.g. 500mg)',
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: dosageCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Dosage (e.g. 1 tab)',
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: freqCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Frequency (e.g. Twice daily)',
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: notesCtrl,
+                  decoration: const InputDecoration(
+                    labelText: 'Instructions / Notes',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                if (medCtrl.text.isNotEmpty) {
+                  final repo = ref.read(prescriptionRepositoryProvider);
+                  final updated = Prescription(
+                    id: rx.id,
+                    patientId: rx.patientId,
+                    patientName: rx.patientName,
+                    doctorId: doctorId,
+                    medicationName: medCtrl.text.trim(),
+                    strength: strengthCtrl.text.trim(),
+                    dosage: dosageCtrl.text.trim(),
+                    frequency: freqCtrl.text.trim(),
+                    startDate: rx.startDate,
+                    endDate: rx.endDate,
+                    notes: notesCtrl.text.trim().isEmpty
+                        ? null
+                        : notesCtrl.text.trim(),
+                    status: rx.status,
+                  );
+                  await repo.createPrescription(updated);
+                  ref.invalidate(doctorPrescriptionsProvider);
+                  if (ctx.mounted) {
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Prescription updated successfully.'),
+                      ),
+                    );
+                  }
+                }
+              },
+              child: const Text('Save Changes'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showStatusChangeDialog(
+    BuildContext context,
+    WidgetRef ref,
+    Prescription rx,
+  ) {
+    String selectedStatus = rx.status;
+    showDialog(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('Change Prescription Status'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                title: const Text('Active'),
+                leading: Radio<String>(
+                  value: 'ACTIVE',
+                  groupValue: selectedStatus,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => selectedStatus = val);
+                    }
+                  },
+                ),
+              ),
+              ListTile(
+                title: const Text('Completed'),
+                leading: Radio<String>(
+                  value: 'COMPLETED',
+                  groupValue: selectedStatus,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => selectedStatus = val);
+                    }
+                  },
+                ),
+              ),
+              ListTile(
+                title: const Text('Discontinued'),
+                leading: Radio<String>(
+                  value: 'DISCONTINUED',
+                  groupValue: selectedStatus,
+                  onChanged: (val) {
+                    if (val != null) {
+                      setDialogState(() => selectedStatus = val);
+                    }
+                  },
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final repo = ref.read(prescriptionRepositoryProvider);
+                await repo.updatePrescriptionStatus(rx.id, selectedStatus);
+                ref.invalidate(doctorPrescriptionsProvider);
+                if (ctx.mounted) {
+                  Navigator.pop(ctx);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Status updated successfully.'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Update'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   void _showAddPrescriptionDialog(BuildContext context, WidgetRef ref) {
     final patients = ref.read(doctorPatientsProvider).value ?? [];
     final user = ref.read(authStateProvider).user;
-    final doctorId = user?.profileData?['doctorId']?.toString() ?? user?.id ?? '';
+    final doctorId =
+        user?.profileData?['doctorId']?.toString() ?? user?.id ?? '';
 
     String? selectedPatientId = patients.isNotEmpty ? patients.first.id : null;
-    String? selectedPatientName = patients.isNotEmpty ? patients.first.name : null;
+    String? selectedPatientName = patients.isNotEmpty
+        ? patients.first.name
+        : null;
 
-    final patientCtrl = TextEditingController(
-      text: selectedPatientName ?? '',
-    );
+    final patientCtrl = TextEditingController(text: selectedPatientName ?? '');
     final medCtrl = TextEditingController();
     final strengthCtrl = TextEditingController(text: '500mg');
     final dosageCtrl = TextEditingController(text: '1 tablet');
@@ -163,7 +408,9 @@ class PrescriptionsScreen extends ConsumerWidget {
                   DropdownButtonFormField<String>(
                     initialValue: selectedPatientId,
                     isExpanded: true,
-                    decoration: const InputDecoration(labelText: 'Select Patient'),
+                    decoration: const InputDecoration(
+                      labelText: 'Select Patient',
+                    ),
                     items: patients.map((p) {
                       return DropdownMenuItem<String>(
                         value: p.id,
@@ -182,7 +429,9 @@ class PrescriptionsScreen extends ConsumerWidget {
                 else
                   TextField(
                     controller: patientCtrl,
-                    decoration: const InputDecoration(labelText: 'Patient Name'),
+                    decoration: const InputDecoration(
+                      labelText: 'Patient Name',
+                    ),
                   ),
                 const SizedBox(height: 8),
                 TextField(
@@ -238,11 +487,14 @@ class PrescriptionsScreen extends ConsumerWidget {
             ElevatedButton(
               onPressed: () async {
                 if (medCtrl.text.isNotEmpty) {
-                  final finalPatientName = selectedPatientName ??
+                  final finalPatientName =
+                      selectedPatientName ??
                       (patientCtrl.text.trim().isNotEmpty
                           ? patientCtrl.text.trim()
                           : 'Patient');
-                  final finalPatientId = selectedPatientId ?? 'patient-${DateTime.now().millisecondsSinceEpoch}';
+                  final finalPatientId =
+                      selectedPatientId ??
+                      'patient-${DateTime.now().millisecondsSinceEpoch}';
 
                   final repo = ref.read(prescriptionRepositoryProvider);
                   await repo.createPrescription(

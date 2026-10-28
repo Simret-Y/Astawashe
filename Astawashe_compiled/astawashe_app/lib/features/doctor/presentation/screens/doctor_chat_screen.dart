@@ -39,9 +39,8 @@ class _DoctorChatScreenState extends ConsumerState<DoctorChatScreen> {
     _textController.clear();
 
     final user = ref.read(authStateProvider).user;
-    final doctorName = user?.profileData?['name']?.toString() ??
-        user?.fullName ??
-        'Doctor';
+    final doctorName =
+        user?.profileData?['name']?.toString() ?? user?.fullName ?? 'Doctor';
     final repo = ref.read(messageRepositoryProvider);
     final sent = await repo.sendMessage(
       senderId: user?.id ?? 'doctor-001',
@@ -64,7 +63,8 @@ class _DoctorChatScreenState extends ConsumerState<DoctorChatScreen> {
     );
     final recipientId = widget.conversationId.replaceFirst('conv-', '');
     final patientAsync = ref.watch(singlePatientDetailProvider(recipientId));
-    final chatTitle = patientAsync.value?.name ??
+    final chatTitle =
+        patientAsync.value?.name ??
         (widget.conversationId.contains('amina')
             ? 'Amina Tesfaye'
             : widget.conversationId.contains('khalid')

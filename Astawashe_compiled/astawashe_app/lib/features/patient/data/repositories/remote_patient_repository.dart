@@ -377,14 +377,12 @@ class RemotePatientRepository implements PatientRepository {
 
   @override
   Future<void> handleApprovalRequest(String requestId, String action) async {
-    final nickSuffix =
-        requestId.length >= 4 ? requestId.substring(0, 4) : requestId;
+    final nickSuffix = requestId.length >= 4
+        ? requestId.substring(0, 4)
+        : requestId;
     await dio.post(
       '/approvals/doctor/patients/$requestId/approve',
-      data: {
-        'action': action.toUpperCase(),
-        'nickname': 'Patient_$nickSuffix',
-      },
+      data: {'action': action.toUpperCase(), 'nickname': 'Patient_$nickSuffix'},
     );
   }
 }

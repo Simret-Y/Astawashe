@@ -90,7 +90,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         final authState = ref.read(authStateProvider);
         final status = authState.user?.status?.toUpperCase() ?? 'PENDING';
 
-        final isPending = status == 'PENDING' ||
+        final isPending =
+            status == 'PENDING' ||
             status == 'PENDING_HOSPITAL_APPROVAL' ||
             status == 'PENDING_DOCTOR_APPROVAL' ||
             status == 'PENDING_SYSTEM_APPROVAL';
@@ -98,7 +99,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
         if (isPending) {
           context.go('/pending-approval');
         } else {
-          final isDoctor = widget.role.toUpperCase() == 'DOCTOR' ||
+          final isDoctor =
+              widget.role.toUpperCase() == 'DOCTOR' ||
               authState.user?.role.toUpperCase() == 'DOCTOR';
           context.go(isDoctor ? '/doctor/home' : '/patient/home');
         }
@@ -213,7 +215,8 @@ class _OtpVerificationScreenState extends ConsumerState<OtpVerificationScreen> {
                   ),
                   children: [
                     const TextSpan(
-                      text: 'Please enter the 6-digit verification code sent to\n',
+                      text:
+                          'Please enter the 6-digit verification code sent to\n',
                     ),
                     TextSpan(
                       text: widget.email,

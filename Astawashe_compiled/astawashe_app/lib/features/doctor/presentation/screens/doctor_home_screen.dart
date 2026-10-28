@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_tts/flutter_tts.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/widgets/stat_tile.dart';
 import '../../../../core/widgets/section_header.dart';
@@ -8,16 +9,48 @@ import '../../../../core/widgets/status_chip.dart';
 import '../../../auth/presentation/providers/auth_state_provider.dart';
 import '../providers/doctor_providers.dart';
 
-class DoctorHomeScreen extends ConsumerWidget {
+class DoctorHomeScreen extends ConsumerStatefulWidget {
   const DoctorHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DoctorHomeScreen> createState() => _DoctorHomeScreenState();
+}
+
+class _DoctorHomeScreenState extends ConsumerState<DoctorHomeScreen> {
+  final FlutterTts _tts = FlutterTts();
+
+  Future<void> _readDashboardSummary() async {
+    final dashboardAsync = ref.read(doctorDashboardProvider);
+    final totalPatients = dashboardAsync.value?.totalPatients ?? 0;
+    final onTrack = dashboardAsync.value?.onTrackCount ?? 0;
+    final needAttention = dashboardAsync.value?.needAttentionCount ?? 0;
+    final missedDose = dashboardAsync.value?.missedDoseCount ?? 0;
+    final pending = dashboardAsync.value?.pendingRequests.length ?? 0;
+
+    final summary =
+        'Doctor dashboard summary. You have $totalPatients total patients. '
+        '$onTrack patients are on track with their medication. '
+        '$needAttention patients need attention. '
+        '$missedDose missed doses recorded today. '
+        '$pending patient approval requests pending review.';
+
+    await _tts.speak(summary);
+  }
+
+  @override
+  void dispose() {
+    _tts.stop();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final dashboardAsync = ref.watch(doctorDashboardProvider);
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
-    String doctorName = dashboardAsync.value?.doctor.name ??
+    String doctorName =
+        dashboardAsync.value?.doctor.name ??
         user?.profileData?['name']?.toString() ??
         user?.fullName ??
         'Doctor';
@@ -29,6 +62,16 @@ class DoctorHomeScreen extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: AppColors.background,
+      appBar: AppBar(
+        title: const Text('Dashboard'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.volume_up_rounded, color: AppColors.primary),
+            tooltip: 'Read summary',
+            onPressed: _readDashboardSummary,
+          ),
+        ],
+      ),
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: () async => ref.invalidate(doctorDashboardProvider),
@@ -103,8 +146,12 @@ class DoctorHomeScreen extends ConsumerWidget {
                             if (pendingCount > 0) ...[
                               const SizedBox(height: 14),
                               ElevatedButton.icon(
-                                onPressed: () => context.push('/doctor/requests'),
-                                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                                onPressed: () =>
+                                    context.push('/doctor/requests'),
+                                icon: const Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  size: 18,
+                                ),
                                 label: Text('Review $pendingCount Request(s)'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: AppColors.primary,
@@ -316,10 +363,7 @@ class DoctorHomeScreen extends ConsumerWidget {
                 const SizedBox(height: 2),
                 const Text(
                   'Tap to review and approve patient requests',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Color(0xFFB45309),
-                  ),
+                  style: TextStyle(fontSize: 12, color: Color(0xFFB45309)),
                 ),
               ],
             ),

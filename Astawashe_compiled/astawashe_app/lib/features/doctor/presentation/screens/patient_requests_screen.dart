@@ -105,6 +105,10 @@ class PatientRequestsScreen extends ConsumerWidget {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
                                 ),
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                ),
                               ),
                               child: const Text('Reject'),
                             ),
@@ -136,6 +140,10 @@ class PatientRequestsScreen extends ConsumerWidget {
                                 backgroundColor: AppColors.statusSuccess,
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(10),
+                                ),
+                                minimumSize: const Size.fromHeight(48),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
                                 ),
                               ),
                               child: const Text('Approve'),

@@ -55,7 +55,9 @@ class HealthInfoScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             _buildInfoCard(
               title: 'Primary Hospital & Care',
-              value: doctor != null ? '$hospital\nAttending: Dr. $doctor' : hospital,
+              value: doctor != null
+                  ? '$hospital\nAttending: Dr. $doctor'
+                  : hospital,
               icon: Icons.local_hospital_outlined,
               iconColor: AppColors.statusSuccess,
             ),

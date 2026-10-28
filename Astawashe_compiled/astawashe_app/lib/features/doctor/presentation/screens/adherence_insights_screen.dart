@@ -220,12 +220,30 @@ class _AdherenceInsightsScreenState
                           ),
                           borderData: FlBorderData(show: false),
                           barGroups: [
-                            _makeBarGroup(0, (avgAdherence * 0.95).clamp(40.0, 100.0)),
-                            _makeBarGroup(1, (avgAdherence * 0.90).clamp(40.0, 100.0)),
-                            _makeBarGroup(2, (avgAdherence * 1.02).clamp(40.0, 100.0)),
-                            _makeBarGroup(3, (avgAdherence * 0.97).clamp(40.0, 100.0)),
-                            _makeBarGroup(4, (avgAdherence * 1.05).clamp(40.0, 100.0)),
-                            _makeBarGroup(5, (avgAdherence * 0.98).clamp(40.0, 100.0)),
+                            _makeBarGroup(
+                              0,
+                              (avgAdherence * 0.95).clamp(40.0, 100.0),
+                            ),
+                            _makeBarGroup(
+                              1,
+                              (avgAdherence * 0.90).clamp(40.0, 100.0),
+                            ),
+                            _makeBarGroup(
+                              2,
+                              (avgAdherence * 1.02).clamp(40.0, 100.0),
+                            ),
+                            _makeBarGroup(
+                              3,
+                              (avgAdherence * 0.97).clamp(40.0, 100.0),
+                            ),
+                            _makeBarGroup(
+                              4,
+                              (avgAdherence * 1.05).clamp(40.0, 100.0),
+                            ),
+                            _makeBarGroup(
+                              5,
+                              (avgAdherence * 0.98).clamp(40.0, 100.0),
+                            ),
                             _makeBarGroup(6, avgAdherence.clamp(40.0, 100.0)),
                           ],
                         ),
@@ -272,7 +290,8 @@ class _AdherenceInsightsScreenState
                       _buildInsightRow(
                         icon: Icons.check_circle_outline_rounded,
                         iconColor: AppColors.statusSuccess,
-                        text: 'All tracked patients are maintaining satisfactory adherence levels.',
+                        text:
+                            'All tracked patients are maintaining satisfactory adherence levels.',
                       ),
                       const SizedBox(height: 10),
                     ],
@@ -280,7 +299,8 @@ class _AdherenceInsightsScreenState
                       _buildInsightRow(
                         icon: Icons.access_time_rounded,
                         iconColor: AppColors.statusWarning,
-                        text: '$missedCount total missed doses recorded today across patients.',
+                        text:
+                            '$missedCount total missed doses recorded today across patients.',
                       )
                     else
                       _buildInsightRow(

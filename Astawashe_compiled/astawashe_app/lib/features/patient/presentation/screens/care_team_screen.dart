@@ -11,7 +11,8 @@ final guardiansListProvider = FutureProvider.autoDispose<List<Guardian>>((
   ref,
 ) async {
   final authState = ref.watch(authStateProvider);
-  final patientId = authState.user?.profileData?['patientId'] ??
+  final patientId =
+      authState.user?.profileData?['patientId'] ??
       authState.user?.id ??
       'patient-001';
   final repo = ref.watch(patientRepositoryProvider);
@@ -28,8 +29,10 @@ class CareTeamScreen extends ConsumerWidget {
     final guardiansAsync = ref.watch(guardiansListProvider);
 
     final doctorName = dashAsync.value?.doctorName ?? 'Primary Physician';
-    final hospitalName = dashAsync.value?.hospitalName ?? 'Tikur Anbessa Hospital';
-    final patientId = authState.user?.profileData?['patientId'] ??
+    final hospitalName =
+        dashAsync.value?.hospitalName ?? 'Tikur Anbessa Hospital';
+    final patientId =
+        authState.user?.profileData?['patientId'] ??
         authState.user?.id ??
         'patient-001';
 
@@ -82,7 +85,9 @@ class CareTeamScreen extends ConsumerWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
-                            doctorName.startsWith('Dr.') ? doctorName : 'Dr. $doctorName',
+                            doctorName.startsWith('Dr.')
+                                ? doctorName
+                                : 'Dr. $doctorName',
                             style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
@@ -280,7 +285,8 @@ class CareTeamScreen extends ConsumerWidget {
             onPressed: () async {
               if (nameCtrl.text.isNotEmpty && phoneCtrl.text.isNotEmpty) {
                 final auth = ref.read(authStateProvider);
-                final patientId = auth.user?.profileData?['patientId'] ??
+                final patientId =
+                    auth.user?.profileData?['patientId'] ??
                     auth.user?.id ??
                     'patient-001';
                 final repo = ref.read(patientRepositoryProvider);

@@ -12,7 +12,8 @@ class MyMedicationsScreen extends ConsumerWidget {
     final medsAsync = ref.watch(patientMedicationsProvider);
     final dashAsync = ref.watch(patientDashboardProvider);
     final doctorName = dashAsync.value?.doctorName ?? 'Primary Physician';
-    final hospitalName = dashAsync.value?.hospitalName ?? 'Tikur Anbessa Specialized Hospital';
+    final hospitalName =
+        dashAsync.value?.hospitalName ?? 'Tikur Anbessa Specialized Hospital';
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -27,17 +28,28 @@ class MyMedicationsScreen extends ConsumerWidget {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.medication_outlined, size: 64, color: AppColors.textMuted.withAlpha(120)),
+                      Icon(
+                        Icons.medication_outlined,
+                        size: 64,
+                        color: AppColors.textMuted.withAlpha(120),
+                      ),
                       const SizedBox(height: 12),
                       const Text(
                         'No Active Medications',
-                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
                       const SizedBox(height: 6),
                       const Text(
                         'Your doctor has not prescribed any active medications yet.',
                         textAlign: TextAlign.center,
-                        style: TextStyle(fontSize: 14, color: AppColors.textMuted),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMuted,
+                        ),
                       ),
                     ],
                   ),

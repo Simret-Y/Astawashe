@@ -21,7 +21,8 @@ class PatientHomeScreen extends ConsumerWidget {
     final authState = ref.watch(authStateProvider);
     final user = authState.user;
 
-    final patientName = dashboardAsync.value?.patient.fullName ??
+    final patientName =
+        dashboardAsync.value?.patient.fullName ??
         user?.profileData?['fullName']?.toString() ??
         user?.fullName ??
         'Patient';
@@ -73,7 +74,10 @@ class PatientHomeScreen extends ConsumerWidget {
                     if (doses.isEmpty) {
                       return Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 32,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
@@ -227,9 +231,12 @@ class PatientHomeScreen extends ConsumerWidget {
     AsyncValue<PatientDashboardData> dashboardAsync,
     AsyncValue<List<DoseLog>> todayDosesAsync,
   ) {
-    final doses = todayDosesAsync.value ?? dashboardAsync.value?.todayDoses ?? [];
+    final doses =
+        todayDosesAsync.value ?? dashboardAsync.value?.todayDoses ?? [];
     final pendingDoses = doses.where((d) => d.isPending).toList();
-    final DoseLog? nextDose = pendingDoses.isNotEmpty ? pendingDoses.first : null;
+    final DoseLog? nextDose = pendingDoses.isNotEmpty
+        ? pendingDoses.first
+        : null;
     final allTaken = doses.isNotEmpty && pendingDoses.isEmpty;
 
     String title = 'Next dose';
@@ -332,10 +339,7 @@ class PatientHomeScreen extends ConsumerWidget {
               alignment: Alignment.centerRight,
               child: ElevatedButton(
                 onPressed: () {
-                  context.push(
-                    '/patient/take-medication',
-                    extra: nextDose,
-                  );
+                  context.push('/patient/take-medication', extra: nextDose);
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.white,

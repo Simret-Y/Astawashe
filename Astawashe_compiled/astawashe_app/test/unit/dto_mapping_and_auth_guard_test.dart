@@ -125,11 +125,7 @@ void main() {
     );
 
     test('Approved Doctor is redirected to /doctor/home from /login', () {
-      const user = User(
-        id: 'doc-approved',
-        role: 'DOCTOR',
-        status: 'ACTIVE',
-      );
+      const user = User(id: 'doc-approved', role: 'DOCTOR', status: 'ACTIVE');
 
       final redirect = RouterNotifier.evaluateRedirect(
         authState: const AuthState(
@@ -145,11 +141,7 @@ void main() {
     test(
       'Patient cannot access /doctor routes and is redirected to /patient/home',
       () {
-        const user = User(
-          id: 'pat-active',
-          role: 'PATIENT',
-          status: 'ACTIVE',
-        );
+        const user = User(id: 'pat-active', role: 'PATIENT', status: 'ACTIVE');
 
         final redirect = RouterNotifier.evaluateRedirect(
           authState: const AuthState(
@@ -166,11 +158,7 @@ void main() {
     test(
       'Doctor cannot access /patient routes and is redirected to /doctor/home',
       () {
-        const user = User(
-          id: 'doc-active',
-          role: 'DOCTOR',
-          status: 'ACTIVE',
-        );
+        const user = User(id: 'doc-active', role: 'DOCTOR', status: 'ACTIVE');
 
         final redirect = RouterNotifier.evaluateRedirect(
           authState: const AuthState(
