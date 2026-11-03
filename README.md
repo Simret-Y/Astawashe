@@ -376,22 +376,8 @@ We believe in an honest account of where AstaWashe stands today:
 
 **INSA Summer Camp PI 2026 — Project Contributors**
 
-<div align="center">
-
-![Meet our team](docs/screenshots/team.png)
-
-</div>
-
-| Full Name | CTC ID | Role | GitHub |
-|---|---|---|---|
-| **Sophonyas Bewuketu** | `CTC-ID-HERE` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
-| **Kibir Mesganaw** | `CTC-ID-HERE` | Doctor & Administrator Portal Development | [@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg) |
-| **Simret Yitbarek** | `CTC-ID-HERE` | Medication, Reminder & Adherence System | [@Simret-Y](https://github.com/Simret-Y) |
-| **Simon Zadig** | `CTC-ID-HERE` | UI/UX & Guardian Form | [@siimonzaadig-git](https://github.com/siimonzaadig-git) |
-| **Tsegazeab Kitaw** | `CTC-ID-HERE` | Patient Portal Development | [@tsegazeabkitaw844-glitch](https://github.com/tsegazeabkitaw844-glitch) |
-| **Tsion Tewelgn** | `CTC-ID-HERE` | Core Backend, Database & Authentication | [@Tsion2107](https://github.com/Tsion2107) |
-
----:|---|---|---|---|
+| Photo | Full Name | CTC ID | Role | GitHub |
+|:---:|---|---|---|---|
 | <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-ID-HERE` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
 | <img src="https://github.com/kibirmesganaw-svg.png" width="60" height="60" alt="Kibir"> | **Kibir Mesganaw** | `CTC-ID-HERE` | Doctor & Administrator Portal Development | [@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg) |
 | <img src="https://github.com/Simret-Y.png" width="60" height="60" alt="Simret"> | **Simret Yitbarek** | `CTC-ID-HERE` | Medication, Reminder & Adherence System | [@Simret-Y](https://github.com/Simret-Y) |
