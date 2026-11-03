@@ -1,0 +1,7 @@
+After running `flutter create`, open android/app/src/main/AndroidManifest.xml and add
+the lines below INSIDE <manifest>, ABOVE <application>:
+
+    <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+    <queries>
+      <intent><action android:name="android.speech.RecognitionService"/></intent>
+    </queries>

@@ -140,7 +140,7 @@ feature/community       → community network & i18n
 
 | Area | Owner |
 |---|---|
-| AI Assistant & RAG | Sophie ([@SOphyJR](https://github.com/SOphyJR)) |
+|AI Assistant & RAG · Core Frontend Development (Flutter Mobile & React Web) · API Integration | Sophie ([@SOphyJR](https://github.com/SOphyJR)) |
 |Medication Management Service| Simret ([@Simret_Y](https://github.com/Simret-Y)) |
 | Core Backend | Tsion ([@tsion2107](https://github.com/Tsion2107)) |
 | Frontend | Tsegazeab ([@tsegayeabkitaw844-glitch](https://github.com/tsegazeabkitaw844-glitch))|
