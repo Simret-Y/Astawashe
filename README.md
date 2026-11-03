@@ -376,6 +376,12 @@ We believe in an honest account of where AstaWashe stands today:
 
 **INSA Summer Camp PI 2026 — Project Contributors**
 
+<div align="center">
+
+![Meet our team](docs/screenshots/team.png)
+
+**INSA Summer Camp PI 2026 — Project Contributors**
+
 | Photo | Full Name | CTC ID | Role | GitHub |
 |:---:|---|---|---|---|
 | <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-ID-HERE` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
