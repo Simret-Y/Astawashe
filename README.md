@@ -22,12 +22,32 @@
 
 <br>
 
-[![AstaWashe product preview — click to watch the demo video](docs/screenshots/cover.png)](VIDEO_LINK_HERE)
 
-**▶️ [Watch the 5-minute demo video](VIDEO_LINK_HERE)**
-
+## 🎬 See AstaWashe in Action
+ 
+<table>
+<tr>
+<td align="center" width="50%" valign="top">
+<a href="https://drive.google.com/file/d/1Ph8bWDEb6g8VeAB6XlVOSUMIp-xB33RR/view?usp=drivesdk"><img src="docs/screenshots/cover.png" alt="Watch the 5-minute demo" width="100%"></a>
+<br><br>
+<h3>⚡ 5-Minute Demo</h3>
+<sub>The essentials: problem, key features, live walkthrough, and how it works — with voice-over.</sub>
+<br><br>
+<a href="https://drive.google.com/file/d/1Ph8bWDEb6g8VeAB6XlVOSUMIp-xB33RR/view?usp=drivesdk"><img src="https://img.shields.io/badge/▶%20Watch%20the%20Demo-5%20min-FF0000?style=for-the-badge&logo=googledrive&logoColor=white" alt="Watch the 5-minute demo"></a>
+</td>
+<td align="center" width="50%" valign="top">
+<a href="https://drive.google.com/file/d/17foCFdsDilb6tyA51tvmOwK-6-yqxo0b/view?usp=sharing"><img src="docs/screenshots/system-architecture.png" alt="Watch the full 35-minute walkthrough" width="100%"></a>
+<br><br>
+<h3>🔬 Full Walkthrough <sup>(optional)</sup></h3>
+<sub>The deep dive: architecture, code, AI/RAG pipeline, and every role explained end to end.</sub>
+<br><br>
+<a href="https://drive.google.com/file/d/17foCFdsDilb6tyA51tvmOwK-6-yqxo0b/view?usp=sharing"><img src="https://img.shields.io/badge/▶%20Watch%20the%20Deep%20Dive-35%20min-0A66C2?style=for-the-badge&logo=googledrive&logoColor=white" alt="Watch the 35-minute walkthrough"></a>
+</td>
+</tr>
+</table>
+<sub>🎧 Best watched with sound on — AstaWashe is audio-first.</sub>
+ 
 </div>
-
 ---
 
 ## 📑 Table of Contents
