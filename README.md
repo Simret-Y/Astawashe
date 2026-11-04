@@ -384,12 +384,12 @@ We believe in an honest account of where AstaWashe stands today:
 
 | Photo | Full Name | CTC ID | Role | GitHub |
 |:---:|---|---|---|---|
-| <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-ID-HERE` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
-| <img src="https://github.com/kibirmesganaw-svg.png" width="60" height="60" alt="Kibir"> | **Kibir Mesganaw** | `CTC-ID-HERE` | Doctor & Administrator Portal Development | [@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg) |
+| <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-3572-16` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
+| <img src="https://github.com/kibirmesganaw-svg.png" width="60" height="60" alt="Kibir"> | **Kibir Mesganaw** | `CTC-998-26` | Doctor & Administrator Portal Development | [@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg) |
 | <img src="https://github.com/Simret-Y.png" width="60" height="60" alt="Simret"> | **Simret Yitbarek** | `CTC-5981-26` | Medication, Reminder & Adherence System | [@Simret-Y](https://github.com/Simret-Y) |
-| <img src="https://github.com/siimonzaadig-git.png" width="60" height="60" alt="Simon"> | **Simon Zadig** | `CTC-ID-HERE` | UI/UX & Guardian Form | [@siimonzaadig-git](https://github.com/siimonzaadig-git) |
-| <img src="https://github.com/tsegazeabkitaw844-glitch.png" width="60" height="60" alt="Tsegazeab"> | **Tsegazeab Kitaw** | `CTC-ID-HERE` | Patient Portal Development | [@tsegazeabkitaw844-glitch](https://github.com/tsegazeabkitaw844-glitch) |
-| <img src="https://github.com/Tsion2107.png" width="60" height="60" alt="Tsion"> | **Tsion Tewelgn** | `CTC-ID-HERE` | Core Backend, Database & Authentication | [@Tsion2107](https://github.com/Tsion2107) |
+| <img src="https://github.com/siimonzaadig-git.png" width="60" height="60" alt="Simon"> | **Simon Zadig** | `CTC-3950-26` | UI/UX & Guardian Form | [@siimonzaadig-git](https://github.com/siimonzaadig-git) |
+| <img src="https://github.com/tsegazeabkitaw844-glitch.png" width="60" height="60" alt="Tsegazeab"> | **Tsegazeab Kitaw** | `CTC-2096-26` | Patient Portal Development | [@tsegazeabkitaw844-glitch](https://github.com/tsegazeabkitaw844-glitch) |
+| <img src="https://github.com/Tsion2107.png" width="60" height="60" alt="Tsion"> | **Tsion Tewelgn** | `CTC-6158-26` | Core Backend, Database & Authentication | [@Tsion2107](https://github.com/Tsion2107) |
 
 ---
 
