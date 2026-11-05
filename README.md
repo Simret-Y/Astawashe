@@ -404,7 +404,7 @@ We believe in an honest account of where AstaWashe stands today:
 
 | Photo | Full Name | CTC ID | Role | GitHub |
 |:---:|---|---|---|---|
-| <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-3572-16` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
+| <img src="https://github.com/SophyJR.png" width="60" height="60" alt="Sophonyas"> | **Sophonyas Bewuketu** | `CTC-3572-26` | AI Assistant & RAG · Core Frontend (Flutter Mobile & React Web) · API Integration | [@SophyJR](https://github.com/SophyJR) |
 | <img src="https://github.com/kibirmesganaw-svg.png" width="60" height="60" alt="Kibir"> | **Kibir Mesganaw** | `CTC-998-26` | Doctor & Administrator Portal Development | [@kibirmesganaw-svg](https://github.com/kibirmesganaw-svg) |
 | <img src="https://github.com/Simret-Y.png" width="60" height="60" alt="Simret"> | **Simret Yitbarek** | `CTC-5981-26` | Medication, Reminder & Adherence System | [@Simret-Y](https://github.com/Simret-Y) |
 | <img src="https://github.com/siimonzaadig-git.png" width="60" height="60" alt="Simon"> | **Simon Zadig** | `CTC-3950-26` | UI/UX & Guardian Form | [@siimonzaadig-git](https://github.com/siimonzaadig-git) |
